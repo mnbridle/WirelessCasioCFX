@@ -1,9 +1,6 @@
 # Wireless Casio FX9750G Plus code
 ## Getting started
-Please install the Adafruit Trinket M0 board support package and patch it before compiling. The patch modifies the trinket_m0 hardware definition which has Serial2 set up to use the SWCLK and SWDIO pins.
 
-> cp -r extras/trinket_m0 ~/.platformio/packages/framework-arduino-samd-adafruit/variants/
+First install VSCode, then install the PlatformIO plugin.
 
-Or in git bash in Windows, do the following:  
-
-> cp -r extras/trinket_m0 /C/Users/OEM/.platformio/packages/framework-arduino-samd-adafruit/variants/
+Open the project in VSCode, and with a bit of luck it should just build.
