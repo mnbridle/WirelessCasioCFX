@@ -28,7 +28,10 @@ void setup() {
 
 void loop() {  
   clearLED();
+  setLEDState(GREEN);
   getRadioStatus();
-  runSerialPortEchoTest();
+  delay(1000);
+  clearLED();
+  delay(1000);
 }
 
