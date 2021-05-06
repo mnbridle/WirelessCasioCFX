@@ -5,10 +5,7 @@
 #include <string>
 
 Uart Serial2( &sercom1, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX ) ;
-
-TransactionState transactionState;
-std::vector<int> cfxBuffer;
-std::vector<int> transactionInfo;
+CFXSerial cfxSerial;
 
 template<typename T>
 std::vector<T> slice(std::vector<T> &v, int m, int n)
@@ -21,67 +18,118 @@ std::vector<T> slice(std::vector<T> &v, int m, int n)
 template<typename T>
 std::string slice_str(std::vector<T> &v, int m, int n)
 {
-  std::vector<int> vec = slice(v, m, n);
-  std::string vec_str(vec.begin(), vec.end());
-  return vec_str;
+    std::vector<int> vec = slice(v, m, n);
+    std::string vec_str(vec.begin(), vec.end());
+    return vec_str;
 }
-
 
 void SERCOM1_Handler()
 {
   Serial2.IrqHandler();
   char rxChar = Serial2.read();
-  receiveData(rxChar);
+  cfxSerial.receiveByte(rxChar);
 }
 
-void receiveData(char rxChar)
-{    
-  Serial.print("0x");
-  Serial.print(rxChar < 16 ? "0" : "");
-  Serial.print(rxChar, HEX);
-  Serial.print(" - ");
-  Serial.println(rxChar);
+void CFXSerial::receiveByte(char rxChar) {
+  switch(transactionState) {
+    case WAIT_FOR_WAKEUP:
+      waitForWakeup(rxChar);
+      break;
+    case WAIT_FOR_TRANSACTION_REQUEST_PACKET:
+      waitForTransactionRequestPacket(rxChar);
+      break;
+    case PROCESS_TRANSACTION:
+      processTransaction(rxChar);
+      break;
+    case TRANSACTION_PROCESSED:
+      Serial.println("Done! Going back to wait state.");
+      transactionState = WAIT_FOR_WAKEUP;
+      break;
 
-  if (transactionState == WAIT_FOR_WAKEUP && (rxChar == TRANSACTION_WAKEUP || rxChar == SCREENSHOT_WAKEUP)) {
-    Serial.println("Wakeup received");
-    sendByte(ACK_WAKEUP);
-    Serial.println("Acknowledge wakeup");
+    default:
+      break;
+  }
+}
+
+void CFXSerial::waitForWakeup(char rxChar) {
+  if(rxChar == TRANSACTION_WAKEUP || rxChar == SCREENSHOT_WAKEUP) {
+    wakeupType = rxChar;
     transactionState = WAIT_FOR_TRANSACTION_REQUEST_PACKET;
-    Serial.println("Transaction started");
-  }
-
-  if (transactionState == WAIT_FOR_TRANSACTION_REQUEST_PACKET) {
-    cfxBuffer.push_back(rxChar);
-    if(cfxBuffer.size() == 50) {
-      transactionInfo = cfxBuffer;
-      cfxBuffer.clear();
-      transactionState = PROCESS_TRANSACTION;
-      Serial.print("TransactionInfo is ");
-      Serial.print(transactionInfo.size());
-      Serial.println(" bytes long.");
-    }
-  }
-
-  if (transactionState == PROCESS_TRANSACTION) {
-    // Decide what the transaction type is
-    std::string tag = slice_str(transactionInfo, 0, 3);
-    std::string datatype = slice_str(transactionInfo, 6, 7);
-
-    Serial.print("Tag: ");
-    Serial.println(tag.c_str());
-    Serial.print("Data type: ");
-    Serial.println(datatype.c_str());
-
-    if(datatype == "VM") {
-      Serial.println("Data type is a variable!");
-    } else {
-      Serial.println("Not sure what I've received");
-    }
+    Serial.println("Transition to WAIT_FOR_TRANSACTION_REQUEST_PACKET");
+    sendByte(Serial2, ACK_WAKEUP);
+  } else {
+    Serial.println("Received unknown character while waiting for wakeup");
   }
 }
 
-void sendByte(char txByte) {
-  Serial2.print(txByte);
+void CFXSerial::waitForTransactionRequestPacket(char rxChar) {
+  buffer.push_back(rxChar);
+  if(wakeupType == TRANSACTION_WAKEUP && buffer.size() == 50) {
+    // Transaction has completed, process it!
+    showBufferContents();
+
+    std::string tag = slice_str(buffer, 0, 3);
+    dataInfo.dataType = slice_str(buffer, 5, 6);
+
+    dataInfo.rows = (uint8_t)buffer[8];
+    dataInfo.cols = (uint8_t)buffer[10];
+
+    dataInfo.variableName = (char)buffer[11];
+    dataInfo.realOrComplex = (char)buffer[27];
+
+    if(tag == ":REQ") {
+      requestType = DataRequest;
+    } else if(tag == ":VAL") {
+      requestType = ValueData;
+    } else if(tag == ":END") {
+      requestType = EndPacket;
+    } else if(tag == ":DD@") {
+      requestType = Screenshot;
+    } else {
+      Serial.print("Unsupported request type: ");
+      Serial.println(tag.c_str());
+    }
+
+    Serial.println(tag.c_str());
+    Serial.println(requestType);
+    Serial.println(dataInfo.rows);
+    Serial.println(dataInfo.cols);
+    Serial.println(dataInfo.variableName);
+    Serial.println(dataInfo.realOrComplex);
+    
+    buffer.clear();
+    transactionState = PROCESS_TRANSACTION;
+    Serial.println("Transitioned to state PROCESS_TRANSACTION");
+    sendByte(Serial2, ACK_PACKET);
+  }
+}
+
+void CFXSerial::processTransaction(char rxChar) {
+  buffer.push_back(rxChar);
+  Serial.println(buffer.size());
+  // What are we trying to do here?
+  if (dataInfo.dataType == "VM" && dataInfo.realOrComplex == 'R' && buffer.size() == 16) {
+    Serial.println("Value packet was received!");
+    showBufferContents();
+    Serial.println("Transition to state TRANSACTION_PROCESSED");
+    buffer.clear();
+    transactionState = TRANSACTION_PROCESSED;
+    sendByte(Serial2, ACK_PACKET);
+  }
+}
+
+void CFXSerial::sendByte(Uart &cfxSerialPort, char txByte) {
+  delay(200);
+  cfxSerialPort.print(txByte);
+}
+
+void CFXSerial::showBufferContents() {
+  for (unsigned int i=0; i<buffer.size(); i++) {
+    Serial.print("0x");
+    Serial.print(buffer[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
 }
 
 void setUpSerialPort()
