@@ -3,6 +3,8 @@
 #include <RadioHelpers.hpp>
 #include <LEDHelpers.hpp>
 
+CFXSerial cfxSerial;
+
 void setup() {
   // Set up DotStar LED
   ledInit();
@@ -29,9 +31,12 @@ void setup() {
 void loop() {  
   clearLED();
   setLEDState(GREEN);
-  getRadioStatus();
-  delay(1000);
-  clearLED();
-  delay(1000);
+
+  cfxSerial.receivePacket();
+
+  // getRadioStatus();
+  // delay(1000);
+  // clearLED();
+  // delay(1000);
 }
 

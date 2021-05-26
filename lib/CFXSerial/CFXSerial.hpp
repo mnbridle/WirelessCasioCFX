@@ -1,8 +1,9 @@
-#include <list>
 #include <vector>
 #include <string>
-
+#include <queue>
 #include <Arduino.h>
+
+//#include "stateMachine/CFXTransaction.h"
 
 // Serial2
 #define PIN_SERIAL2_RX       (20ul) // PA31
@@ -24,47 +25,14 @@
 #define IMAGE_BYTES            'PC'
 #define SCREENSHOT_BYTES       'DW'
 
-enum TransactionState {
-    WAIT_FOR_WAKEUP,
-    WAIT_FOR_TRANSACTION_REQUEST_PACKET,
-    PROCESS_TRANSACTION,
-    TRANSACTION_PROCESSED
-};
-
-enum RequestType {
-    DataRequest,
-    ValueData,
-    EndPacket,
-    Screenshot
-};
-
-struct DataInfo {
-    std::string dataType;
-    char identifier;
-    int rows;
-    int cols;
-    char variableName;
-    char realOrComplex;
-};
-
 class CFXSerial {
     private:
-        char wakeupType;
-        TransactionState transactionState = WAIT_FOR_WAKEUP;
-
-        RequestType requestType;
-        DataInfo dataInfo;
-
-        std::vector<int> buffer;
-
-        void waitForWakeup(char);
-        void waitForTransactionRequestPacket(char);
-        void processTransaction(char);
-        void showBufferContents(void);
 
     public:
+        void init();
         void receiveByte(char);
-        void sendByte(Uart &serialPort, char);
+        void sendByte(char);
+        int receivePacket(void);
 };
 
 void setUpSerialPort(void);
