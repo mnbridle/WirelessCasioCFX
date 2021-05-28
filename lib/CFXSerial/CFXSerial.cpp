@@ -37,7 +37,7 @@ void setUpSerialPort()
 void CFXSerial::init() {
 }
 
-int CFXSerial::receivePacket() {
+bool CFXSerial::receivePacket() {
   // Receive entire packet
   unsigned long serialTimer = millis();
   unsigned long timeoutDuration = 250;
@@ -59,21 +59,17 @@ int CFXSerial::receivePacket() {
   }
 
   if(i == 0) {
-    Serial.println("No packet received!");
-    return -1;
-  } else {
-    Serial.println("Timed out! We have a packet");
-    Serial.print("Buf len: ");
-    Serial.println(i);
+    packet_type = UNSUPPORTED;
+    size = i;
+    return false;
   }
 
+  // Store packet data in class
   // Determine packet type
   packet_type = PacketCodec().getPacketType(buffer, i);
-
-  // Store packet data in class
   size = i;
   
-  return 0;
+  return true;
 }
 
 void CFXSerial::sendByte(uint8_t txByte) {

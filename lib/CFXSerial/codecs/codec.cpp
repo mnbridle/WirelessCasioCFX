@@ -23,13 +23,10 @@ uint8_t* PacketCodec::getBinaryFromDouble(double value) {
 PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
     switch(size) {
         case 1:
-            Serial.println("WAKE_UP");
             return WAKE_UP;
         case 16:
-            Serial.println("VALUE");
             return VALUE;
         case 26:
-            Serial.println("VALUE");
             return VALUE;
         case 50:
             std::string signature;
@@ -38,16 +35,12 @@ PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
             }
 
             if(signature.compare(":REQ") == 0) {
-                Serial.println("REQUEST");
                 return REQUEST;
             } else if(signature.compare(":END") == 0) {
-                Serial.println("END");
                 return END;
             } else if(signature.compare(":VAL") == 0) {
-                Serial.println("VAL");
                 return VARIABLE_DESCRIPTION;
             } else {
-                Serial.println("UNSUPPORTED");
                 return UNSUPPORTED;
             }
     }

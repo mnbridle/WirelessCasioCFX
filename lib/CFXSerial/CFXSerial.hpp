@@ -32,7 +32,7 @@ class CFXSerial {
     public:
         void init();
         void receiveByte(char);
-        int receivePacket(void);
+        bool receivePacket(void);
 
         void sendWakeUpAck(void);
         void sendDataAck(void);
