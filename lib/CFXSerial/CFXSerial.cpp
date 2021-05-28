@@ -41,34 +41,50 @@ int CFXSerial::receivePacket() {
   // Receive entire packet
   unsigned long serialTimer = millis();
   unsigned long timeoutDuration = 250;
-  std::vector<int> buffer;
+
+  size_t i = 0;
 
   while (millis() < serialTimer + timeoutDuration) {
     if(!rxBuffer.empty())
     {
-      buffer.push_back(rxBuffer.front());
+      buffer[i] = rxBuffer.front();
       rxBuffer.pop();
       serialTimer = millis();
+      i++;
     }
     else
     {
       delay(10);
     }
   }
-  if(buffer.size() == 0) {
+
+  if(i == 0) {
     Serial.println("No packet received!");
     return -1;
   } else {
     Serial.println("Timed out! We have a packet");
     Serial.print("Buf len: ");
-    Serial.println((int)buffer.size());
+    Serial.println(i);
   }
 
-  // Check to see if the packet is valid and return a struct?
+  // Determine packet type
+  packet_type = PacketCodec().getPacketType(buffer, i);
+
+  // Store packet data in class
+  size = i;
+  
   return 0;
 }
 
-void CFXSerial::sendByte(char txByte) {
+void CFXSerial::sendByte(uint8_t txByte) {
   txBuffer.push(txByte);
   send_serial();
+}
+
+void CFXSerial::sendWakeUpAck() {
+  sendByte(0x13);
+}
+
+void CFXSerial::sendDataAck() {
+  sendByte(0x06);
 }

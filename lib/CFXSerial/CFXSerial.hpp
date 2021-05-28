@@ -1,7 +1,10 @@
+#pragma once
+
 #include <vector>
 #include <string>
 #include <queue>
 #include <Arduino.h>
+#include "codecs/codec.hpp"
 
 //#include "stateMachine/CFXTransaction.h"
 
@@ -26,13 +29,21 @@
 #define SCREENSHOT_BYTES       'DW'
 
 class CFXSerial {
-    private:
-
     public:
         void init();
         void receiveByte(char);
-        void sendByte(char);
         int receivePacket(void);
+
+        void sendWakeUpAck(void);
+        void sendDataAck(void);
+
+        uint8_t buffer[1024];
+        size_t size;
+        PacketType packet_type;
+        
+    private:
+        void sendByte(uint8_t);
+
 };
 
 void setUpSerialPort(void);

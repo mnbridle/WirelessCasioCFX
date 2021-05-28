@@ -2,6 +2,7 @@
 #include <CFXSerial.hpp>
 #include <RadioHelpers.hpp>
 #include <LEDHelpers.hpp>
+#include <process_rx.h>
 
 CFXSerial cfxSerial;
 
@@ -32,7 +33,7 @@ void loop() {
   clearLED();
   setLEDState(GREEN);
 
-  cfxSerial.receivePacket();
+  main_processor(cfxSerial);
 
   // getRadioStatus();
   // delay(1000);
