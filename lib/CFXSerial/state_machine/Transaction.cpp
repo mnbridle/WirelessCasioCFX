@@ -13,3 +13,8 @@ void Transaction::setState(TransactionState& newState)
 	currentState = &newState;  // actually change states now
 	currentState->enter(this); // do stuff after we change state
 }
+
+void Transaction::trigger()
+{
+	currentState->trigger(this);
+}

@@ -38,7 +38,7 @@ class Idle : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -52,7 +52,7 @@ class WaitForDataRequest : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -66,7 +66,7 @@ class SendVariableDescriptionPacket : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -80,7 +80,7 @@ class ReceiveValuePacket : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -94,7 +94,7 @@ class SendValuePacket : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -108,7 +108,7 @@ class SendEndPacket : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -122,7 +122,7 @@ class WaitForScreenshotRequest : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -136,7 +136,7 @@ class ReceiveScreenshotData : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
@@ -150,7 +150,7 @@ class ReceiveEndPacket : public TransactionState
 {
 public:
     void enter(Transaction* Transaction) {}
-    bool transition(Transaction* Transaction, Transitions transition);
+    void trigger(Transaction* Transaction);
 	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 

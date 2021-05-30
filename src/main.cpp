@@ -24,8 +24,6 @@ void setup() {
     setLEDState(RED);
     Serial.println("Error initialising DRF4463 radio. Rebooting...");
   }
-
-  delay(3000);
   setLEDState(GREEN);
 }
 

@@ -85,6 +85,7 @@ bool CFXSerial::receivePacket()
 bool CFXSerial::process_transaction()
 {
   bool isSuccessful = false;
+  Serial.println("Processing transaction");
 
   if(!receivePacket())
   {
@@ -105,13 +106,15 @@ bool CFXSerial::process_transaction()
     if(decodedPacket.wakeUpType == DATA)
     {
       Serial.println("Trigger RECEIVED_DATA_WAKE_UP");
-      isSuccessful = transaction.transition(RECEIVED_DATA_WAKE_UP);
+      //isSuccessful = transaction.transition(RECEIVED_DATA_WAKE_UP);
+      transaction.trigger();
       Serial.println("Did the thing");
     } 
     else if(decodedPacket.wakeUpType == SCREENSHOT)
     {
       Serial.println("Trigger RECEIVED_SCREENSHOT_WAKE_UP");
-      isSuccessful = transaction.transition(RECEIVED_SCREENSHOT_WAKE_UP);
+      //isSuccessful = transaction.transition(RECEIVED_SCREENSHOT_WAKE_UP);
+      transaction.trigger();
       Serial.println("Did the thing");
     } else {
       Serial.println("Unsuccessful!");
