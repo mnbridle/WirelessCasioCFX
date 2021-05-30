@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include <wiring_private.h>
-#include <CFXSerial.hpp>
-
-#include "helpers/VectorHelpers.h"
-
 #include <string>
 #include <queue>
+
+#include <CFXSerial.hpp>
+#include "helpers/VectorHelpers.h"
+#include "state_machine/Transitions.h"
 
 Uart Serial2( &sercom1, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX ) ;
 
@@ -18,8 +18,10 @@ void SERCOM1_Handler()
   rxBuffer.push(Serial2.read());
 }
 
-void send_serial() {
-  while(!txBuffer.empty()) {
+void send_serial() 
+{
+  while(!txBuffer.empty()) 
+  {
     Serial2.write(txBuffer.front());
     txBuffer.pop();
   }
@@ -34,17 +36,24 @@ void setUpSerialPort()
 
 /* -------- CFXSerial member functions -------- */
 
-void CFXSerial::init() {
+CFXSerial::CFXSerial(void)
+{
 }
 
-bool CFXSerial::receivePacket() {
+CFXSerial::~CFXSerial(void)
+{
+}
+
+bool CFXSerial::receivePacket()
+{
   // Receive entire packet
   unsigned long serialTimer = millis();
   unsigned long timeoutDuration = 250;
 
   size_t i = 0;
 
-  while (millis() < serialTimer + timeoutDuration) {
+  while (millis() < serialTimer + timeoutDuration)
+  {
     if(!rxBuffer.empty())
     {
       buffer[i] = rxBuffer.front();
@@ -58,7 +67,8 @@ bool CFXSerial::receivePacket() {
     }
   }
 
-  if(i == 0) {
+  if(i == 0)
+  {
     packet_type = UNSUPPORTED;
     size = i;
     return false;
@@ -72,15 +82,66 @@ bool CFXSerial::receivePacket() {
   return true;
 }
 
-void CFXSerial::sendByte(uint8_t txByte) {
+bool CFXSerial::process_transaction()
+{
+  bool isSuccessful = false;
+
+  if(!receivePacket())
+  {
+    return false;
+  }
+
+  // Decide what to do with packet
+  if(packet_type == UNSUPPORTED)
+  {
+    return false;
+  }
+
+  if(packet_type == WAKE_UP)
+  {
+    // Decode wakeup and decide what to do
+    WakeUp decodedPacket = WakeUpPacket().decode(buffer, size);
+    
+    if(decodedPacket.wakeUpType == DATA)
+    {
+      Serial.println("Trigger RECEIVED_DATA_WAKE_UP");
+      isSuccessful = transaction.transition(RECEIVED_DATA_WAKE_UP);
+      Serial.println("Did the thing");
+    } 
+    else if(decodedPacket.wakeUpType == SCREENSHOT)
+    {
+      Serial.println("Trigger RECEIVED_SCREENSHOT_WAKE_UP");
+      isSuccessful = transaction.transition(RECEIVED_SCREENSHOT_WAKE_UP);
+      Serial.println("Did the thing");
+    } else {
+      Serial.println("Unsuccessful!");
+    }
+  }
+
+  Serial.print("Transition successful: ");
+  Serial.println(isSuccessful);
+
+  return true;
+
+  // if(packet_type == REQUEST)
+  // {
+  //   Request decodedPacket = RequestPacket().decode(buffer, size);
+  //   transaction.transition(RECEIVED_REQUEST_PACKET);
+  // }
+}
+
+void CFXSerial::sendByte(uint8_t txByte) 
+{
   txBuffer.push(txByte);
   send_serial();
 }
 
-void CFXSerial::sendWakeUpAck() {
+void CFXSerial::sendWakeUpAck()
+{
   sendByte(0x13);
 }
 
-void CFXSerial::sendDataAck() {
+void CFXSerial::sendDataAck()
+{
   sendByte(0x06);
 }

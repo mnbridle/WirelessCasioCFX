@@ -5,8 +5,8 @@
 #include <queue>
 #include <Arduino.h>
 #include "codecs/codec.hpp"
-
-//#include "stateMachine/CFXTransaction.h"
+#include "state_machine/Transaction.h"
+#include "state_machine/Transitions.h"
 
 // Serial2
 #define PIN_SERIAL2_RX       (20ul) // PA31
@@ -30,9 +30,13 @@
 
 class CFXSerial {
     public:
-        void init();
+        CFXSerial();
+        ~CFXSerial();
+
         void receiveByte(char);
         bool receivePacket(void);
+
+        bool process_transaction(void);
 
         void sendWakeUpAck(void);
         void sendDataAck(void);
@@ -40,6 +44,9 @@ class CFXSerial {
         uint8_t buffer[1024];
         size_t size;
         PacketType packet_type;
+
+        // State machine
+        Transaction transaction;
         
     private:
         void sendByte(uint8_t);
