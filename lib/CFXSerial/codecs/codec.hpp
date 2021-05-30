@@ -63,7 +63,8 @@ class PacketCodec {
         bool checksumValid(uint8_t* buffer, size_t size);
         uint8_t calculateChecksum(uint8_t buffer, size_t size);
         double getDoubleFromBinary(uint8_t* buffer, size_t size);
-        uint8_t* getBinaryFromDouble(double value);
+        
+        bool getBinaryFromDouble(double value, uint8_t* buffer, size_t size);
 
         PacketType getPacketType(uint8_t* buffer, size_t size);
 };
@@ -78,15 +79,15 @@ class WakeUpPacket : PacketCodec {
         uint8_t encodedPacket[1];
 };
 
-// class RequestPacket : PacketCodec {
-//     public:
-//         uint8_t* encode(char* variableType, char* variableName);
-//         Request decode(uint8_t* buffer, size_t size);
-//     private:
-//         Request decodedPacket;
-//         size_t const size = 50;
-//         uint8_t encodedPacket[50];
-// };
+class RequestPacket : PacketCodec {
+    public:
+        uint8_t* encode(char* variableType, char* variableName);
+        Request decode(uint8_t* buffer, size_t size);
+    private:
+        Request decodedPacket;
+        size_t const size = 50;
+        uint8_t encodedPacket[50];
+};
 
 // class VariableDescriptionPacket : PacketCodec {
 //     public:

@@ -15,9 +15,9 @@ double PacketCodec::getDoubleFromBinary(uint8_t* buffer, size_t size) {
     return value;
 }
 
-uint8_t* PacketCodec::getBinaryFromDouble(double value) {
-    uint8_t buffer[10] = {'0'};
-    return buffer;
+bool PacketCodec::getBinaryFromDouble(double value, uint8_t* buffer, size_t size) {
+    buffer[0] = 0;
+    return true;
 }
 
 PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
@@ -64,9 +64,11 @@ WakeUp WakeUpPacket::decode(uint8_t* buffer, size_t size)
 // {
 // }
 
-// Request RequestPacket::decode(uint8_t* buffer, size_t size) 
-// {
-// }
+Request RequestPacket::decode(uint8_t* buffer, size_t size) 
+{
+    Request decodedPacket;
+    return decodedPacket;
+}
 
 // uint8_t* VariableDescriptionPacket::encode(char* variableType, bool variableInUse, char* variableName, bool isComplex)
 // {
@@ -74,6 +76,8 @@ WakeUp WakeUpPacket::decode(uint8_t* buffer, size_t size)
 
 // VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t size)
 // {
+//     VariableDescription decodedPacket;
+//     return decodedPacket;
 // }
 
 // uint8_t* ValuePacket::encode(uint8_t row, uint8_t col, double value) {
@@ -83,10 +87,14 @@ WakeUp WakeUpPacket::decode(uint8_t* buffer, size_t size)
 // }
 
 // ComplexValue ValuePacket::decode(uint8_t* buffer, size_t size) {
+//     ComplexValue decodedPacket;
+//     return decodedPacket;
 // }
 
 // uint8_t* EndPacket::encode() {
 // }
 
 // End EndPacket::decode(uint8_t* buffer, size_t size) {
+//     End decodedPacket;
+//     return decodedPacket;
 // }
