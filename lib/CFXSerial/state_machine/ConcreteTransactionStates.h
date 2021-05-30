@@ -34,18 +34,12 @@
 
 */
 
-class TransactionState
-{
-    public:
-        void enter(Transaction* Transaction) {}
-	    void exit(Transaction* Transaction) {}
-};
-
 class Idle : public TransactionState
 {
 public:
-	void received_data_wake_up(Transaction* Transaction);
-    void received_screenshot_wake_up(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -57,8 +51,9 @@ private:
 class WaitForDataRequest : public TransactionState
 {
 public:
-	void received_request_packet(Transaction* Transaction);
-    void received_variable_description_packet(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -70,7 +65,9 @@ private:
 class SendVariableDescriptionPacket : public TransactionState
 {
 public:
-	void received_ack(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -82,7 +79,9 @@ private:
 class ReceiveValuePacket : public TransactionState
 {
 public:
-	void received_value_packet(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -94,7 +93,9 @@ private:
 class SendValuePacket : public TransactionState
 {
 public:
-	void received_ack(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -106,7 +107,9 @@ private:
 class SendEndPacket : public TransactionState
 {
 public:
-    void sent_end_packet(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -118,7 +121,9 @@ private:
 class WaitForScreenshotRequest : public TransactionState
 {
 public:
-	void received_screenshot_request(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -130,7 +135,9 @@ private:
 class ReceiveScreenshotData : public TransactionState
 {
 public:
-	void received_screenshot_data(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:
@@ -142,7 +149,9 @@ private:
 class ReceiveEndPacket : public TransactionState
 {
 public:
-	void received_end_packet(Transaction* Transaction);
+    void enter(Transaction* Transaction) {}
+    bool transition(Transaction* Transaction, Transitions transition);
+	void exit(Transaction* Transaction) {}
     static TransactionState& getInstance();
 
 private:

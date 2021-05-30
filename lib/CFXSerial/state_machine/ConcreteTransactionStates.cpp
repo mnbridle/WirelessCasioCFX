@@ -1,14 +1,19 @@
 #include "ConcreteTransactionStates.h"
 
-void Idle::received_data_wake_up(Transaction* Transaction)
+bool Idle::transition(Transaction* Transaction, Transitions transition)
 {
+    // Check to ensure the requested transition is valid
+    if(transition == RECEIVED_SCREENSHOT_WAKE_UP)
+    {
+        Transaction->setState(WaitForScreenshotRequest::getInstance());
+    } else if(transition == RECEIVED_DATA_WAKE_UP)
+    {
+        Transaction->setState(WaitForDataRequest::getInstance());
+    } else {
+        return false;
+    }
 
-}
-
-void Idle::received_screenshot_wake_up(Transaction* Transaction)
-{
-    // Idle -> WaitForScreenshotRequest
- 	Transaction->setState(WaitForScreenshotRequest::getInstance());
+    return true;
 }
 
 TransactionState& Idle::getInstance()
@@ -17,28 +22,37 @@ TransactionState& Idle::getInstance()
     return singleton;
 }
 
-void WaitForDataRequest::received_request_packet(Transaction* Transaction)
-{
-    // WaitForDataRequest -> SendVariableDescriptionPacket
-    Transaction->setState(SendVariableDescriptionPacket::getInstance());
-}
+// ------------------- WaitForDataRequest -------------------
 
-void WaitForDataRequest::received_variable_description_packet(Transaction* Transaction)
+bool WaitForDataRequest::transition(Transaction* Transaction, Transitions transition)
 {
-    // WaitForDataRequest->ReceiveValuePacket
-    Transaction->setState(ReceiveValuePacket::getInstance());
+    if(transition == RECEIVED_REQUEST_PACKET) {
+        Transaction->setState(SendVariableDescriptionPacket::getInstance());
+    } else if(transition == RECEIVED_VARIABLE_DESCRIPTION_PACKET) {
+        Transaction->setState(ReceiveValuePacket::getInstance());
+    } else {
+        return false;
+    }
+    return true;
 }
-
 TransactionState& WaitForDataRequest::getInstance()
 {
     static WaitForDataRequest singleton;
     return singleton;
 }
 
-void SendVariableDescriptionPacket::received_ack(Transaction* Transaction)
+// -------------------SendVariableRequestPacket -------------------
+
+bool SendVariableDescriptionPacket::transition(Transaction* Transaction, Transitions transition)
 {
-    // SendVariableDescriptionPacket->SendValuePacket
-    Transaction->setState(SendValuePacket::getInstance());
+    if(transition == RECEIVED_ACK)
+    {
+        Transaction->setState(SendValuePacket::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 TransactionState& SendVariableDescriptionPacket::getInstance()
@@ -47,10 +61,18 @@ TransactionState& SendVariableDescriptionPacket::getInstance()
     return singleton;
 }
 
-void ReceiveValuePacket::received_value_packet(Transaction* Transaction)
+// ------------------- ReceiveValuePacket -------------------
+
+bool ReceiveValuePacket::transition(Transaction* Transaction, Transitions transition)
 {
-    // ReceiveValuePacket->ReceiveEndPacket
-    Transaction->setState(ReceiveEndPacket::getInstance());
+    if(transition == RECEIVED_VALUE_PACKET)
+    {
+        Transaction->setState(ReceiveEndPacket::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 TransactionState& ReceiveValuePacket::getInstance() 
@@ -59,10 +81,18 @@ TransactionState& ReceiveValuePacket::getInstance()
     return singleton;
 }
 
-void SendValuePacket::received_ack(Transaction* Transaction)
+// ------------------- SendValuePacket -------------------
+
+bool SendValuePacket::transition(Transaction* Transaction, Transitions transition)
 {
-    // SendValuePacket -> SendEndPacket
-    Transaction->setState(SendEndPacket::getInstance());
+    if(transition == RECEIVED_ACK)
+    {
+        Transaction->setState(SendEndPacket::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 TransactionState& SendValuePacket::getInstance()
@@ -71,22 +101,38 @@ TransactionState& SendValuePacket::getInstance()
     return singleton;
 }
 
+// ------------------- SendEndPacket -------------------
+
+bool SendEndPacket::transition(Transaction* Transaction, Transitions transition)
+{
+    if(transition == SENT_END_PACKET)
+    {
+        Transaction->setState(Idle::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
 TransactionState& SendEndPacket::getInstance()
 {
     static SendEndPacket singleton;
     return singleton;
 }
 
-void SendEndPacket::sent_end_packet(Transaction* Transaction)
-{
-    // SendEndPacket -> Idle
-    Transaction->setState(Idle::getInstance());
-}
+// ------------------- WaitForScreenshotRequest -------------------
 
-void WaitForScreenshotRequest::received_screenshot_request(Transaction* Transaction)
+bool WaitForScreenshotRequest::transition(Transaction* Transaction, Transitions transition)
 {
-    // WaitForScreenshotRequest -> ReceiveScreenshotData
- 	Transaction->setState(ReceiveScreenshotData::getInstance());
+    if(transition == RECEIVED_SCREENSHOT_REQUEST)
+    {
+        Transaction->setState(ReceiveScreenshotData::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 TransactionState& WaitForScreenshotRequest::getInstance()
@@ -95,10 +141,18 @@ TransactionState& WaitForScreenshotRequest::getInstance()
     return singleton;
 }
 
-void ReceiveScreenshotData::received_screenshot_data(Transaction* Transaction)
+// ------------------- ReceiveScreenshotData -------------------
+
+bool ReceiveScreenshotData::transition(Transaction* Transaction, Transitions transition)
 {
-    // ReceiveScreenshotData -> ReceiveEndPacket
-    Transaction->setState(ReceiveEndPacket::getInstance());
+    if(transition == RECEIVED_SCREENSHOT_DATA)
+    {
+        Transaction->setState(ReceiveEndPacket::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 TransactionState& ReceiveScreenshotData::getInstance()
@@ -107,10 +161,18 @@ TransactionState& ReceiveScreenshotData::getInstance()
     return singleton;
 }
 
-void ReceiveEndPacket::received_end_packet(Transaction* Transaction)
+// -------------------ReceiveEndPacket -------------------
+
+bool ReceiveEndPacket::transition(Transaction* Transaction, Transitions transition)
 {
-    // ReceiveEndPacket -> Idle
-    Transaction->setState(Idle::getInstance());
+    if(transition == RECEIVED_END_PACKET)
+    {
+        Transaction->setState(Idle::getInstance());
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 TransactionState& ReceiveEndPacket::getInstance()
