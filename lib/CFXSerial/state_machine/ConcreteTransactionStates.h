@@ -8,26 +8,29 @@
 
                                                                   ____________________________________________________________________________________
                                                                  /                                                                                    \
-                                                                 |                                                                                     \
-                                                              _|IDLE|______________________________                                                     \
-                                                            /                                      \                                                    |
-                                   received_data_wake_up() /                                        \  received_screenshot_wake_up()                    |
-                                                          /                                          \                                                  |
-                                               |WaitForDataRequest|                       |WaitForScreenshotRequest|                                    |
-                                                       / \                                            |                                                 |
-                            received_request_packet() /   \ received_variable_description_packet()    | received_screenshot_request()                   |
-                                                     /     \                                          |                                                 |
-                                                    /       \                                         |                                                 |
-                         |SendVariableDescriptionPacket| |ReceiveValuePacket|              |ReceiveScreenshotData|                                      |
-                                        |                         |                                   |                                                 |
-                         received_ack() | received_value_packet()  \                                  | received_screenshot_data()                      |
-                                        |                           \                                 |                                                 |
-                                 |SendValuePacket|                   \_______________________|ReceiveEndPacket|                                         /
-                                        |                                                             |                                                /
-                         received_ack() |                                                             | received_end_packet()                         /           
-                                        |                                                              \____________________________________________ /
-                                   |SendEndPacket|                                                                                                  /
-                                        \__________________________________________________________________________________________________________/
+                                                                |                                                                                      \
+                                                             _|IDLE|______________________________                                                      \
+                                                           /                                      \                                                     |
+                                  received_data_wake_up() /                                        \  received_screenshot_wake_up()                     |
+                                                         /                                          \                                                   |
+                                              |WaitForDataRequest|                       |WaitForScreenshotRequest|                                     |
+                                                      / \                                            |                                                  |
+                           received_request_packet() /   \ received_variable_description_packet()    | received_screenshot_request()                    |
+                                                    /     \                                          |                                                  | 
+                                                   /       \                                         |                                                  |
+                        |SendVariableDescriptionPacket| |ReceiveValuePacket|              |ReceiveScreenshotData|                                       |
+                                       |                         |                                   |                                                  |
+                        received_ack() | received_value_packet()  \                                  | received_screenshot_data()                       |
+                                       |                           \                                 |                                                  |
+                                |SendValuePacket|                   \_______________________|ReceiveEndPacket|                                         /
+                                       |                                                             |                                                /
+                        received_ack() |                                                             | received_end_packet()                         /           
+                                       |                                                              \____________________________________________ /
+                                 |SendEndPacket|                                                                                                   /
+                                       |                                                                                                          /
+                                       | sent_end_packet()                                                                                       |
+                                       |                                                                                                         |
+                                        \________________________________________________________________________________________________________/
 
 */
 
@@ -36,7 +39,6 @@ class TransactionState
     public:
         void enter(Transaction* Transaction) {}
 	    void exit(Transaction* Transaction) {}
-        static TransactionState& getInstance();
 };
 
 class Idle : public TransactionState
@@ -44,6 +46,7 @@ class Idle : public TransactionState
 public:
 	void received_data_wake_up(Transaction* Transaction);
     void received_screenshot_wake_up(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	Idle() {}
@@ -56,6 +59,7 @@ class WaitForDataRequest : public TransactionState
 public:
 	void received_request_packet(Transaction* Transaction);
     void received_variable_description_packet(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	WaitForDataRequest() {}
@@ -67,6 +71,7 @@ class SendVariableDescriptionPacket : public TransactionState
 {
 public:
 	void received_ack(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	SendVariableDescriptionPacket() {}
@@ -78,6 +83,7 @@ class ReceiveValuePacket : public TransactionState
 {
 public:
 	void received_value_packet(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	ReceiveValuePacket() {}
@@ -89,6 +95,7 @@ class SendValuePacket : public TransactionState
 {
 public:
 	void received_ack(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	SendValuePacket() {}
@@ -99,7 +106,9 @@ private:
 class SendEndPacket : public TransactionState
 {
 public:
-	
+    void sent_end_packet(Transaction* Transaction);
+    static TransactionState& getInstance();
+
 private:
 	SendEndPacket() {}
 	SendEndPacket(const SendEndPacket& other);
@@ -110,6 +119,7 @@ class WaitForScreenshotRequest : public TransactionState
 {
 public:
 	void received_screenshot_request(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	WaitForScreenshotRequest() {}
@@ -121,6 +131,7 @@ class ReceiveScreenshotData : public TransactionState
 {
 public:
 	void received_screenshot_data(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	ReceiveScreenshotData() {}
@@ -132,6 +143,7 @@ class ReceiveEndPacket : public TransactionState
 {
 public:
 	void received_end_packet(Transaction* Transaction);
+    static TransactionState& getInstance();
 
 private:
 	ReceiveEndPacket() {}
