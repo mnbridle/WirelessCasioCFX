@@ -5,7 +5,7 @@ void main_processor(CFXSerial &cfxSerial) {
     // TODO: Should state machine live inside CFXSerial or here?
 
     while(1) {
-        if(cfxSerial.receivePacket()) {
+        if(cfxSerial.process_transaction()) {
             Serial.print("Packet received! Packet type: ");
             Serial.print(cfxSerial.packet_type);
             Serial.print(", size: ");
