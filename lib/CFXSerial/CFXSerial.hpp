@@ -5,8 +5,6 @@
 #include <queue>
 #include <Arduino.h>
 #include "codecs/codec.hpp"
-#include "state_machine/Transaction.h"
-#include "state_machine/Transitions.h"
 
 // Serial2
 #define PIN_SERIAL2_RX       (20ul) // PA31
@@ -28,6 +26,32 @@
 #define IMAGE_BYTES            'PC'
 #define SCREENSHOT_BYTES       'DW'
 
+enum class Transitions {
+	RECEIVED_DATA_WAKE_UP,
+	RECEIVED_SCREENSHOT_WAKE_UP,
+	RECEIVED_REQUEST_PACKET,
+	RECEIVED_VARIABLE_DESCRIPTION_PACKET,
+	RECEIVED_SCREENSHOT_REQUEST,
+	RECEIVED_ACK,
+	RECEIVED_VALUE_PACKET,
+	RECEIVED_SCREENSHOT_DATA,
+	RECEIVED_END_PACKET,
+	SENT_END_PACKET
+};
+
+enum class States {
+    IDLE,
+    WAIT_FOR_DATA_REQUEST,
+    WAIT_FOR_ACK,
+    SEND_VARIABLE_DESCRIPTION_PACKET,
+    RECEIVE_VALUE_PACKET,
+    SEND_VALUE_PACKET,
+    SEND_END_PACKET,
+    WAIT_FOR_SCREENSHOT_REQUEST,
+    RECEIVE_SCREENSHOT_DATA,
+    RECEIVE_END_PACKET
+};
+
 class CFXSerial {
     public:
         CFXSerial();
@@ -41,15 +65,29 @@ class CFXSerial {
         void sendWakeUpAck(void);
         void sendDataAck(void);
 
+        bool execute_current_state();
+
+        bool state_IDLE();
+        bool state_WAIT_FOR_DATA_REQUEST();
+        bool state_WAIT_FOR_ACK();
+        bool state_SEND_VARIABLE_DESCRIPTION_PACKET();
+        bool state_RECEIVE_VALUE_PACKET();
+        bool state_SEND_VALUE_PACKET();
+        bool state_SEND_END_PACKET();
+        bool state_WAIT_FOR_SCREENSHOT_REQUEST();
+        bool state_RECEIVE_SCREENSHOT_DATA();
+        bool state_RECEIVE_END_PACKET();
+
         uint8_t buffer[1024];
         size_t size;
         PacketType packet_type;
-
-        // State machine
-        Transaction transaction;
         
     private:
+        States current_state;
         void sendByte(uint8_t);
+        void sendBuffer(uint8_t* buffer, size_t size);
+
+        Request data_request;
 
 };
 

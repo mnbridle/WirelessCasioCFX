@@ -1,8 +1,4 @@
-#pragma once
-#include "TransactionState.h"
-#include "Transaction.h"
-
-/* State Transition Diagram
+State Transition Diagram
 
 
 
@@ -16,6 +12,8 @@
                                               |WaitForDataRequest|                       |WaitForScreenshotRequest|                                     |
                                                       / \                                            |                                                  |
                            received_request_packet() /   \ received_variable_description_packet()    | received_screenshot_request()                    |
+                                     |WaitForAck|   |    |
+                                     received_ack() |    |
                                                     /     \                                          |                                                  | 
                                                    /       \                                         |                                                  |
                         |SendVariableDescriptionPacket| |ReceiveValuePacket|              |ReceiveScreenshotData|                                       |
@@ -32,130 +30,18 @@
                                        |                                                                                                         |
                                         \________________________________________________________________________________________________________/
 
-*/
 
-class Idle : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
+Transitions enum:
 
-private:
-	Idle() {}
-	Idle(const Idle& other);
-	Idle& operator=(const Idle& other);
-};
-
-class WaitForDataRequest : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	WaitForDataRequest() {}
-	WaitForDataRequest(const WaitForDataRequest& other);
-	WaitForDataRequest& operator=(const WaitForDataRequest& other);
-};
-
-class SendVariableDescriptionPacket : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	SendVariableDescriptionPacket() {}
-	SendVariableDescriptionPacket(const SendVariableDescriptionPacket& other);
-	SendVariableDescriptionPacket& operator=(const SendVariableDescriptionPacket& other);
-};
-
-class ReceiveValuePacket : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	ReceiveValuePacket() {}
-	ReceiveValuePacket(const ReceiveValuePacket& other);
-	ReceiveValuePacket& operator=(const ReceiveValuePacket& other);
-};
-
-class SendValuePacket : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	SendValuePacket() {}
-	SendValuePacket(const SendValuePacket& other);
-	SendValuePacket& operator=(const SendValuePacket& other);
-};
-
-class SendEndPacket : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	SendEndPacket() {}
-	SendEndPacket(const SendEndPacket& other);
-	SendEndPacket& operator=(const SendEndPacket& other);
-};
-
-class WaitForScreenshotRequest : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	WaitForScreenshotRequest() {}
-	WaitForScreenshotRequest(const WaitForScreenshotRequest& other);
-	WaitForScreenshotRequest& operator=(const WaitForScreenshotRequest& other);
-};
-
-class ReceiveScreenshotData : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	ReceiveScreenshotData() {}
-	ReceiveScreenshotData(const ReceiveScreenshotData& other);
-	ReceiveScreenshotData& operator=(const ReceiveScreenshotData& other);
-};
-
-class ReceiveEndPacket : public TransactionState
-{
-public:
-    void enter(Transaction* Transaction) {}
-    void trigger(Transaction* Transaction);
-	void exit(Transaction* Transaction) {}
-    static TransactionState& getInstance();
-
-private:
-	ReceiveEndPacket() {}
-	ReceiveEndPacket(const ReceiveEndPacket& other);
-	ReceiveEndPacket& operator=(const ReceiveEndPacket& other);
+enum Transitions {
+	RECEIVED_DATA_WAKE_UP,
+	RECEIVED_SCREENSHOT_WAKE_UP,
+	RECEIVED_REQUEST_PACKET,
+	RECEIVED_VARIABLE_DESCRIPTION_PACKET,
+	RECEIVED_SCREENSHOT_REQUEST,
+	RECEIVED_ACK,
+	RECEIVED_VALUE_PACKET,
+	RECEIVED_SCREENSHOT_DATA,
+	RECEIVED_END_PACKET,
+	SENT_END_PACKET
 };

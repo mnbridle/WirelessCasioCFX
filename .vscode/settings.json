@@ -61,6 +61,10 @@
         "xmemory0": "cpp",
         "xstddef": "cpp",
         "xtr1common": "cpp",
-        "any": "cpp"
+        "any": "cpp",
+        "bitset": "cpp",
+        "rope": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp"
     }
 }

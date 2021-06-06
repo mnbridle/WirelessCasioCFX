@@ -4,13 +4,13 @@ void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
     // TODO: Should state machine live inside CFXSerial or here?
 
+    CFXSerial cfxSerial_inst = cfxSerial;
+
     while(1) {
-        if(cfxSerial.process_transaction()) {
-            Serial.print("Packet received! Packet type: ");
-            Serial.print(cfxSerial.packet_type);
-            Serial.print(", size: ");
-            Serial.println(cfxSerial.size);
+        if(!cfxSerial_inst.execute_current_state())
+        {
+            Serial.println("State not transitioned, waiting 1000ms");
+            delay(1000);
         }
-        delay(1000);
     }
 }

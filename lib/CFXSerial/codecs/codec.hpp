@@ -5,8 +5,9 @@
 
 void decode(uint8_t buffer[], size_t message_length);
 
-enum PacketType {
+enum class PacketType {
     WAKE_UP,
+    ACK,
     REQUEST,
     VARIABLE_DESCRIPTION,
     VALUE,
@@ -14,7 +15,15 @@ enum PacketType {
     UNSUPPORTED
 };
 
-enum WakeUpByte : uint8_t {
+enum class RequestDataType {
+    VARIABLE,
+    PICTURE,
+    LIST,
+    MATRIX,
+    UNKNOWN
+};
+
+enum class WakeUpByte : uint8_t {
     DATA = 0x15,
     SCREENSHOT = 0x16
 };
@@ -24,14 +33,18 @@ struct WakeUp {
     bool isValid;
 };
 
+struct Ack {
+    bool isValid;
+};
+
 struct Request {
-    char variableType[2];
+    RequestDataType variableType;
     char variableName;
     bool isValid;
 };
 
 struct VariableDescription {
-    char variableType[2];
+    RequestDataType variableType;
     bool variableInUse;
     char variableName;
     bool isComplex;
@@ -61,7 +74,7 @@ struct End {
 class PacketCodec {
     public:
         bool checksumValid(uint8_t* buffer, size_t size);
-        uint8_t calculateChecksum(uint8_t buffer, size_t size);
+        uint8_t calculateChecksum(uint8_t* buffer, size_t size);
         double getDoubleFromBinary(uint8_t* buffer, size_t size);
         
         bool getBinaryFromDouble(double value, uint8_t* buffer, size_t size);
@@ -89,15 +102,25 @@ class RequestPacket : PacketCodec {
         uint8_t encodedPacket[50];
 };
 
-// class VariableDescriptionPacket : PacketCodec {
-//     public:
-//         uint8_t* encode(char* variableType, bool variableInUse, char* variableName, bool isComplex);
-//         VariableDescription decode(uint8_t* buffer, size_t size);
-//     private:
-//         VariableDescription decodedPacket;
-//         size_t const size = 50;
-//         uint8_t encodedPacket[50];
-// };
+class AckPacket : PacketCodec {
+    public:
+        uint8_t* encode();
+        Ack decode(uint8_t* buffer, size_t size);
+    private:
+        Ack decodedPacket;
+        size_t const size = 1;
+        uint8_t encodedPacket[1];
+};
+
+class VariableDescriptionPacket : PacketCodec {
+    public:
+        uint8_t* encode(VariableDescription packetToEncode);
+        VariableDescription decode(uint8_t* buffer, size_t size);
+    private:
+        VariableDescription decodedPacket;
+        size_t const size = 50;
+        uint8_t encodedPacket[50];
+};
 
 // class ValuePacket : PacketCodec {
 //     public:
