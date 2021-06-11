@@ -1,3 +1,5 @@
+#pragma once
+
 // Imports for onboard LED
 #include <Adafruit_DotStar.h>
 

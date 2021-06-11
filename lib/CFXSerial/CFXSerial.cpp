@@ -8,20 +8,9 @@
 
 Uart Serial2( &sercom1, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX ) ;
 
-std::queue<int> txBuffer;
-
 void SERCOM1_Handler()
 {
   Serial2.IrqHandler();
-}
-
-void send_serial() 
-{
-  while(!txBuffer.empty()) 
-  {
-    Serial2.write(txBuffer.front());
-    txBuffer.pop();
-  }
 }
 
 void setUpSerialPort()
@@ -35,7 +24,8 @@ void setUpSerialPort()
 
 CFXSerial::CFXSerial(void)
 {
-  current_state = States::IDLE;
+  go_to_idle_state();
+  variable_memory.set('A', 420.69);
 }
 
 CFXSerial::~CFXSerial(void)
@@ -46,7 +36,8 @@ bool CFXSerial::receivePacket()
 {
   // Receive entire packet
   unsigned long serialTimer = millis();
-  unsigned long timeoutDuration = 250;
+  unsigned long timeoutDuration = 100;
+  unsigned long start = millis();
 
   size_t i = 0;
 
@@ -60,7 +51,19 @@ bool CFXSerial::receivePacket()
     }
     else
     {
-      delay(10);
+      delay(5);
+    }
+
+    if(i==1 && !(buffer[0]==':'))
+    {
+      // It's an acknowledgement or wakeup
+      break;
+    }
+
+    if(i==50)
+    {
+      // No more data!
+      break;
     }
   }
 
@@ -75,28 +78,21 @@ bool CFXSerial::receivePacket()
   // Determine packet type
   packet_type = PacketCodec().getPacketType(buffer, i);
   size = i;
-  
+
   return true;
 }
 
 void CFXSerial::sendByte(uint8_t txByte) 
 {
-  txBuffer.push(txByte);
-  send_serial();
+  Serial2.write(txByte);
 }
 
 void CFXSerial::sendBuffer(uint8_t* buffer, size_t size)
 {
-  Serial.println("Writing buffer");
   for(size_t i=0; i<size; i++)
   {
-    txBuffer.push(buffer[i]);
-    Serial.print(buffer[i], HEX);
-    Serial.print(" ");
+    Serial2.write(buffer[i]);
   }
-  Serial.println("");
-  Serial.println("Sending...");
-  send_serial();
 }
 
 void CFXSerial::sendWakeUpAck()
@@ -113,56 +109,41 @@ void CFXSerial::sendDataAck()
 
 bool CFXSerial::execute_current_state() {
   bool isSuccessful = false;
-
-    switch(current_state) {
-        case States::IDLE :
-        {
-            Serial.println("IDLE");
-            isSuccessful = state_IDLE();
-            break;
-        }
-        case States::RECEIVE_SCREENSHOT_DATA :
-            Serial.println("RECEIVE_SCREENSHOT_DATA");
-            isSuccessful = state_RECEIVE_SCREENSHOT_DATA();
-            break;
-        case States::RECEIVE_END_PACKET :
-            Serial.println("RECEIVE_END_PACKET");
-            isSuccessful = state_RECEIVE_END_PACKET();
-            break;
-        case States::RECEIVE_VALUE_PACKET :
-            Serial.println("RECEIVE_VALUE_PACKET");
-            isSuccessful = state_RECEIVE_VALUE_PACKET();
-            break;
-        case States::SEND_END_PACKET :
-            Serial.println("SEND_END_PACKET");
-            isSuccessful = state_SEND_END_PACKET();
-            break;
-        case States::SEND_VALUE_PACKET :
-            Serial.println("SEND_VALUE_PACKET");
-            isSuccessful = state_SEND_VALUE_PACKET();
-            break;
-        case States::SEND_VARIABLE_DESCRIPTION_PACKET :
-            Serial.println("SEND_VARIABLE_DESCRIPTION_PACKET");
-            isSuccessful = state_SEND_VARIABLE_DESCRIPTION_PACKET();
-            break;
-        case States::WAIT_FOR_DATA_REQUEST :
-            Serial.println("WAIT_FOR_DATA_REQUEST");
-            isSuccessful = state_WAIT_FOR_DATA_REQUEST();
-            break;
-        case States::WAIT_FOR_SCREENSHOT_REQUEST :
-            Serial.println("WAIT_FOR_SCREENSHOT_REQUEST");
-            isSuccessful = state_WAIT_FOR_SCREENSHOT_REQUEST();
-            break;
-        case States::WAIT_FOR_ACK :
-            Serial.println("WAIT_FOR_ACK");
-            isSuccessful = state_WAIT_FOR_ACK();
-            break;
-        default:
-            Serial.println("Unknown state!");
-            Serial.println((uint8_t)current_state);
-            break;
-    }
-    return isSuccessful;
+  
+  switch(current_state) {
+    case States::IDLE :
+        isSuccessful = state_IDLE();
+        break;
+    case States::RECEIVE_SCREENSHOT_DATA :
+        isSuccessful = state_RECEIVE_SCREENSHOT_DATA();
+        break;
+    case States::RECEIVE_END_PACKET :
+        isSuccessful = state_RECEIVE_END_PACKET();
+        break;
+    case States::RECEIVE_VALUE_PACKET :
+        isSuccessful = state_RECEIVE_VALUE_PACKET();
+        break;
+    case States::SEND_END_PACKET :
+        isSuccessful = state_SEND_END_PACKET();
+        break;
+    case States::SEND_VALUE_PACKET :
+        isSuccessful = state_SEND_VALUE_PACKET();
+        break;
+    case States::SEND_VARIABLE_DESCRIPTION_PACKET :
+        isSuccessful = state_SEND_VARIABLE_DESCRIPTION_PACKET();
+        break;
+    case States::WAIT_FOR_DATA_REQUEST :
+        isSuccessful = state_WAIT_FOR_DATA_REQUEST();
+        break;
+    case States::WAIT_FOR_SCREENSHOT_REQUEST :
+        isSuccessful = state_WAIT_FOR_SCREENSHOT_REQUEST();
+        break;
+    default:
+        Serial.println("Unknown state!");
+        Serial.println((uint8_t)current_state);
+        break;
+  }
+  return isSuccessful;
 }
 
 bool CFXSerial::state_IDLE()
@@ -181,7 +162,6 @@ bool CFXSerial::state_IDLE()
     WakeUp decodedPacket = WakeUpPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
     {
-      Serial.println("WakeUpPacket was not valid");
       return false;
     }
 
@@ -197,7 +177,6 @@ bool CFXSerial::state_IDLE()
     }
     else
     {
-      Serial.println("Invalid wakeup!");
       return false;
     }
   }
@@ -212,25 +191,30 @@ bool CFXSerial::state_IDLE()
 bool CFXSerial::state_RECEIVE_SCREENSHOT_DATA()
 {
   Serial.println("Not implemented");
+  go_to_idle_state();
   return false;
 }
 
 bool CFXSerial::state_RECEIVE_END_PACKET()
 {
   Serial.println("Not implemented");
+  go_to_idle_state();
   return false;
 }
 
 bool CFXSerial::state_RECEIVE_VALUE_PACKET()
 {
   Serial.println("Not implemented");
+  go_to_idle_state();
   return false;
 }
 
 bool CFXSerial::state_SEND_END_PACKET()
 {
-  Serial.println("Not implemented");
-  return false;
+  End packetToEncode;
+  sendBuffer(EndPacket().encode(packetToEncode), 50);
+  go_to_idle_state();
+  return true;
 }
 
 bool CFXSerial::state_SEND_VALUE_PACKET()
@@ -240,12 +224,18 @@ bool CFXSerial::state_SEND_VALUE_PACKET()
 
   packetToEncode.row = 1;
   packetToEncode.col = 1;
-  packetToEncode.value = 1.23456789012345;
+  packetToEncode.value = variable_memory.get(data_request.variableName);
   packetToEncode.isValid = true;
 
   sendBuffer(ValuePacket().encode(packetToEncode), 16);
 
-  current_state = States::IDLE;
+  if(!wait_for_ack())
+  {
+    go_to_idle_state();
+    return false;
+  }
+
+  current_state = States::SEND_END_PACKET;
 
   return true;
 }
@@ -266,8 +256,6 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   // Just transition to SEND_VALUE_PACKET
   // Clear anything bogus that's been received into the buffer
   packetReceived = receivePacket();
-
-  Serial.println("Acked OK, changing state to SEND_VALUE_PACKET");
   current_state = States::SEND_VALUE_PACKET;
 
   return true;
@@ -279,6 +267,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
   packetReceived = receivePacket();
   if(!packetReceived)
   {
+    go_to_idle_state();
     return false;
   }
 
@@ -289,23 +278,31 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
     data_request = RequestPacket().decode(buffer, size);
     if(!data_request.isValid)
     {
-      Serial.println("Packet was not valid");
+      go_to_idle_state();
       return false;
     }
     sendDataAck();
-    current_state = States::WAIT_FOR_ACK;
+
+    if(!wait_for_ack())
+    {
+      go_to_idle_state();
+      return false;
+    }
+
+    current_state = States::SEND_VARIABLE_DESCRIPTION_PACKET;
   }
   else if(packet_type == PacketType::VARIABLE_DESCRIPTION)
   {
     VariableDescription decodedPacket = VariableDescriptionPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
     {
-      Serial.println("Packet was not valid");
+      go_to_idle_state();
       return false;
     }
   }
   else
   {
+    go_to_idle_state();
     return false;
   }
   return true;
@@ -314,30 +311,40 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
 bool CFXSerial::state_WAIT_FOR_SCREENSHOT_REQUEST()
 {
   Serial.println("Not implemented");
+  go_to_idle_state();
   return false;
 }
 
-bool CFXSerial::state_WAIT_FOR_ACK()
+bool CFXSerial::wait_for_ack()
 {
+  // not really a state!
   bool packetReceived = false;
   packetReceived = receivePacket();
   if(!packetReceived)
   {
+    go_to_idle_state();
     return false;
   }
 
-  // To leave WAIT_FOR_ACK state, we need an Ack packet
+  // Return false if not an ack
   if(packet_type != PacketType::ACK)
   {
+    go_to_idle_state();
     return false;
   }
 
   Ack decodedPacket = AckPacket().decode(buffer, size);
   if(!decodedPacket.isValid)
   {
+    go_to_idle_state();
     return false;
   }
 
-  current_state = States::SEND_VARIABLE_DESCRIPTION_PACKET;
+  return true;
+}
+
+bool CFXSerial::go_to_idle_state()
+{
+  current_state = States::IDLE;
   return true;
 }

@@ -5,6 +5,7 @@
 #include <queue>
 #include <Arduino.h>
 #include "codecs/codec.hpp"
+#include "storage/variables.h"
 
 // Serial2
 #define PIN_SERIAL2_RX       (20ul) // PA31
@@ -42,7 +43,6 @@ enum class Transitions {
 enum class States {
     IDLE,
     WAIT_FOR_DATA_REQUEST,
-    WAIT_FOR_ACK,
     SEND_VARIABLE_DESCRIPTION_PACKET,
     RECEIVE_VALUE_PACKET,
     SEND_VALUE_PACKET,
@@ -69,7 +69,6 @@ class CFXSerial {
 
         bool state_IDLE();
         bool state_WAIT_FOR_DATA_REQUEST();
-        bool state_WAIT_FOR_ACK();
         bool state_SEND_VARIABLE_DESCRIPTION_PACKET();
         bool state_RECEIVE_VALUE_PACKET();
         bool state_SEND_VALUE_PACKET();
@@ -81,14 +80,16 @@ class CFXSerial {
         uint8_t buffer[1024];
         size_t size;
         PacketType packet_type;
+        VariableStorage variable_memory;
         
     private:
         States current_state;
         void sendByte(uint8_t);
         void sendBuffer(uint8_t* buffer, size_t size);
+        bool wait_for_ack();
+        bool go_to_idle_state();
 
         Request data_request;
-
 };
 
 void setUpSerialPort(void);

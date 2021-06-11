@@ -24,8 +24,62 @@ double PacketCodec::getDoubleFromBinary(uint8_t* buffer, size_t size) {
     return value;
 }
 
-bool PacketCodec::getBinaryFromDouble(double value, uint8_t* buffer, size_t size) {
-    buffer[0] = 0;
+bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t offset) 
+{
+    bool hasImaginaryPart, partIsNegative, valueIsOneOrMore;
+    float exponent;
+    uint8_t nibble_buffer[16] = {0x00};
+    uint8_t signInfoByte = 0;
+
+    // Get information for SignInfoByte
+    hasImaginaryPart = false;
+    partIsNegative = (value < 0);
+    valueIsOneOrMore = (value >= 1);
+    value = abs(value);
+    exponent = round(log10(value));
+    // Convert value into fixed-point using exponent
+    value /= pow(10, exponent);
+
+    // First nibble is always zero
+    nibble_buffer[0] = 0;
+
+    for(uint8_t i=1; i<16; i++)
+    {
+        nibble_buffer[i] = (uint8_t)value;
+        value -= (uint8_t)value;
+        value *= 10;
+    }
+
+    // Get nibbles out and create the actual buffer
+    for(uint8_t i=0; i<8; i++)
+    {
+        buffer[i] = nibble_buffer[i*2] << 4 | nibble_buffer[i*2 + 1];
+    }
+
+    // signInfoByte is byte 8 of buffer
+    signInfoByte = hasImaginaryPart << 7 | partIsNegative << 6 | partIsNegative << 4 | valueIsOneOrMore;
+    buffer[8] = signInfoByte;
+
+    // exponent_bcd is byte 9 of buffer
+
+    if(exponent<0)
+    {
+        exponent += 100;
+    } else {
+        exponent = abs(exponent);
+    }
+
+    nibble_buffer[0] = (uint8_t)(exponent/10);
+    nibble_buffer[1] = (uint8_t)(10*((exponent/10)-nibble_buffer[0]));
+
+    buffer[9] = nibble_buffer[0] << 4 | nibble_buffer[1];
+
+    return true;
+}
+
+bool PacketCodec::getBinaryFromDouble(double value, uint8_t* buffer, size_t size) 
+{
+    double2bcd(value, buffer, 8, 0);
     return true;
 }
 
@@ -45,6 +99,7 @@ PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
         case 26:
             return PacketType::VALUE;
         case 50:
+        {
             std::string signature;
             for (size_t i=0; i<4; i++) {
                 signature.push_back((char)buffer[i]);
@@ -57,8 +112,21 @@ PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
             } else if(signature.compare(":VAL") == 0) {
                 return PacketType::VARIABLE_DESCRIPTION;
             } else {
-                return PacketType::UNSUPPORTED;
+                Serial.println("Invalid packet of size 50!");
+                //return PacketType::UNSUPPORTED;
             }
+        }
+        default:
+        {
+            Serial.println("Something funky happened.");
+            for(size_t i=0; i<size; i++)
+            {
+              Serial.print(buffer[i], HEX);
+              buffer[i] = 0x00;
+              Serial.print(" ");
+            }
+            size = 0;
+        }
     }
     return PacketType::UNSUPPORTED;
 }
@@ -97,9 +165,8 @@ Ack AckPacket::decode(uint8_t* buffer, size_t size)
 Request RequestPacket::decode(uint8_t* buffer, size_t size) 
 {
     Request decodedPacket;
-
     std::string request_data_type;
-    
+        
     for (size_t i=5; i<7; i++) {
         request_data_type.push_back((char)buffer[i]);
     }
@@ -217,21 +284,50 @@ VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t si
     return decodedPacket;
 }
 
-// uint8_t* ValuePacket::encode(uint8_t row, uint8_t col, double value) {
-// }
+uint8_t* ValuePacket::encode(Value packetToEncode) {
+    encodedPacket[0] = ':';
+    encodedPacket[1] = 0x00;
+    encodedPacket[2] = packetToEncode.row;
+    encodedPacket[3] = 0x00;
+    encodedPacket[4] = packetToEncode.col;
 
-// uint8_t* ValuePacket::encode(uint8_t row, uint8_t col, double real_part, double imag_part) {
-// }
+    uint8_t real_buf[10];
+    getBinaryFromDouble(packetToEncode.value, real_buf, 10);
 
-// ComplexValue ValuePacket::decode(uint8_t* buffer, size_t size) {
-//     ComplexValue decodedPacket;
-//     return decodedPacket;
-// }
+    for(size_t i=0; i<10; i++)
+    {
+        encodedPacket[5+i] = real_buf[i];
+    }
 
-// uint8_t* EndPacket::encode() {
-// }
+    // Get checksum
+    encodedPacket[15] = calculateChecksum(encodedPacket, 16);
 
-// End EndPacket::decode(uint8_t* buffer, size_t size) {
-//     End decodedPacket;
-//     return decodedPacket;
-// }
+    return encodedPacket;
+}
+
+ComplexValue ValuePacket::decode(uint8_t* buffer, size_t size) {
+    ComplexValue decodedPacket;
+    return decodedPacket;
+}
+
+uint8_t* EndPacket::encode(End packetToEncode) {
+    encodedPacket[0] = ':';
+    encodedPacket[1] = 'E';
+    encodedPacket[2] = 'N';
+    encodedPacket[3] = 'D';
+    for(size_t i=4; i<49; i++)
+    {
+        encodedPacket[i] = 0xFF;
+    }
+    encodedPacket[49] = 0x56;
+
+    return encodedPacket;
+}
+
+End EndPacket::decode(uint8_t* buffer, size_t size) {
+    End decodedPacket;
+    // We don't actually care what the contents are, we'll always end the conversation here
+    decodedPacket.isValid = true;
+
+    return decodedPacket;
+}

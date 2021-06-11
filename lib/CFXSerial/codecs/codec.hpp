@@ -75,9 +75,10 @@ class PacketCodec {
     public:
         bool checksumValid(uint8_t* buffer, size_t size);
         uint8_t calculateChecksum(uint8_t* buffer, size_t size);
+
         double getDoubleFromBinary(uint8_t* buffer, size_t size);
-        
         bool getBinaryFromDouble(double value, uint8_t* buffer, size_t size);
+        bool double2bcd(double dec, uint8_t* buffer, size_t size, size_t offset); 
 
         PacketType getPacketType(uint8_t* buffer, size_t size);
 };
@@ -122,20 +123,23 @@ class VariableDescriptionPacket : PacketCodec {
         uint8_t encodedPacket[50];
 };
 
-// class ValuePacket : PacketCodec {
-//     public:
-//         uint8_t* encode(uint8_t row, uint8_t col, double value);
-//         uint8_t* encode(uint8_t row, uint8_t col, double real_part, double imag_part);
-//         ComplexValue decode(uint8_t* buffer, size_t size);
-//     private:
-//         ComplexValue decodedPacket;
-//         size_t const size = 26;
-//         // Use only lower 16 bytes if not complex
-//         uint8_t encodedPacket[26];
-// };
+class ValuePacket : PacketCodec {
+    public:
+        uint8_t* encode(Value packetToEncode);
+        uint8_t* encode(ComplexValue packetToEncode);
+        ComplexValue decode(uint8_t* buffer, size_t size);
+        uint8_t getSize();
+    private:
+        ComplexValue decodedPacket;
+        size_t const size = 26;
+        // Use only lower 16 bytes if not complex
+        uint8_t encodedPacket[26];
+};
 
-// class EndPacket : PacketCodec {
-//     public:
-//         uint8_t* encode(void);
-//         End decode(uint8_t* buffer, size_t size);
-// };
+class EndPacket : PacketCodec {
+    public:
+        uint8_t* encode(End packetToEncode);
+        End decode(uint8_t* buffer, size_t size);
+    private:
+        uint8_t encodedPacket[50];
+};

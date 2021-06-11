@@ -13,9 +13,11 @@ void setup() {
   setLEDState(RED);
   
   // Set up serial port
+  Serial.begin(115200);
   Serial.println("Initialising serial port...");
   setUpSerialPort();
   
+  Serial.println("Setting up radio");
   // Set up radio
   if(setupRadio()) {
     setLEDState(YELLOW);
@@ -24,6 +26,7 @@ void setup() {
     setLEDState(RED);
     Serial.println("Error initialising DRF4463 radio. Rebooting...");
   }
+  Serial.println("Setup complete!");
   setLEDState(GREEN);
 }
 
@@ -32,10 +35,5 @@ void loop() {
   setLEDState(GREEN);
 
   main_processor(cfxSerial);
-
-  // getRadioStatus();
-  // delay(1000);
-  // clearLED();
-  // delay(1000);
 }
 
