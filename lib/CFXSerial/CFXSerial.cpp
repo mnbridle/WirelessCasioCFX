@@ -8,13 +8,11 @@
 
 Uart Serial2( &sercom1, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX ) ;
 
-std::queue<int> rxBuffer;
 std::queue<int> txBuffer;
 
 void SERCOM1_Handler()
 {
   Serial2.IrqHandler();
-  rxBuffer.push(Serial2.read());
 }
 
 void send_serial() 
@@ -54,10 +52,9 @@ bool CFXSerial::receivePacket()
 
   while (millis() < serialTimer + timeoutDuration)
   {
-    if(!rxBuffer.empty())
+    if(Serial2.available())
     {
-      buffer[i] = rxBuffer.front();
-      rxBuffer.pop();
+      buffer[i] = Serial2.read();
       serialTimer = millis();
       i++;
     }
@@ -238,8 +235,19 @@ bool CFXSerial::state_SEND_END_PACKET()
 
 bool CFXSerial::state_SEND_VALUE_PACKET()
 {
-  Serial.println("Not implemented");
-  return false;
+  bool packetReceived = false;
+  Value packetToEncode;
+
+  packetToEncode.row = 1;
+  packetToEncode.col = 1;
+  packetToEncode.value = 1.23456789012345;
+  packetToEncode.isValid = true;
+
+  sendBuffer(ValuePacket().encode(packetToEncode), 16);
+
+  current_state = States::IDLE;
+
+  return true;
 }
 
 bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
@@ -255,33 +263,9 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
 
   sendBuffer(VariableDescriptionPacket().encode(packetToEncode), 50);
 
-  // Wait for an acknowledgement - once this is received, transition to SEND_VALUE_PACKET
-  // If acknowledgement not received within five attempts, assume the connection is hung
-  uint8_t attempts = 5;
-  while(attempts > 0 && !packetReceived)
-  {
-    packetReceived = receivePacket();
-    if(!packetReceived)
-    {
-      attempts--;
-      Serial.print("Ack not rxed, wait another 1000ms - attempts left: ");
-      Serial.println(attempts);
-      delay(1000);
-    }
-  }
-
-  if(attempts == 0 && !packetReceived)
-  {
-    Serial.println("Nothing heard");
-    return false;
-  }
-
-  if(packet_type != PacketType::ACK)
-  {
-    Serial.println("Not an ACK!");
-    Serial.println((uint8_t)packet_type);
-    return false;
-  }
+  // Just transition to SEND_VALUE_PACKET
+  // Clear anything bogus that's been received into the buffer
+  packetReceived = receivePacket();
 
   Serial.println("Acked OK, changing state to SEND_VALUE_PACKET");
   current_state = States::SEND_VALUE_PACKET;
