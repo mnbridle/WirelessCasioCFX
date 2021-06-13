@@ -90,6 +90,7 @@ class CFXSerial {
         bool go_to_idle_state();
 
         Request data_request;
+        VariableDescription variable_description;
 };
 
 void setUpSerialPort(void);

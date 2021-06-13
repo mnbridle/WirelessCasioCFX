@@ -49,6 +49,8 @@ struct VariableDescription {
     char variableName;
     bool isComplex;
     bool isValid;
+    uint8_t row;
+    uint8_t col;
 };
 
 struct Value {
@@ -77,8 +79,8 @@ class PacketCodec {
         uint8_t calculateChecksum(uint8_t* buffer, size_t size);
 
         double getDoubleFromBinary(uint8_t* buffer, size_t size);
-        bool getBinaryFromDouble(double value, uint8_t* buffer, size_t size);
-        bool double2bcd(double dec, uint8_t* buffer, size_t size, size_t offset); 
+        bool double2bcd(double dec, uint8_t* buffer, size_t size, size_t offset);
+        double bcd2double(uint8_t* buffer, size_t size, size_t offset);
 
         PacketType getPacketType(uint8_t* buffer, size_t size);
 };

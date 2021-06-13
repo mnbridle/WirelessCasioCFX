@@ -197,16 +197,65 @@ bool CFXSerial::state_RECEIVE_SCREENSHOT_DATA()
 
 bool CFXSerial::state_RECEIVE_END_PACKET()
 {
-  Serial.println("Not implemented");
+  bool packetReceived = false;
+  packetReceived = receivePacket();
+  if(!packetReceived)
+  {
+    go_to_idle_state();
+    return false;
+  }
+
+  if(packet_type == PacketType::END)
+  {
+    go_to_idle_state();
+    return true;
+  }
+
   go_to_idle_state();
   return false;
 }
 
 bool CFXSerial::state_RECEIVE_VALUE_PACKET()
 {
-  Serial.println("Not implemented");
+  bool packetReceived = false;
+  ComplexValue value_packet;
+  packetReceived = receivePacket();
+
+  if(!packetReceived)
+  {
+    go_to_idle_state();
+    return false;
+  }
+
+  if(packet_type == PacketType::VALUE)
+  {
+    // decode value packet
+    value_packet = ValuePacket().decode(buffer, size);
+    sendDataAck();
+
+    // Do something with the received data
+
+    switch(variable_description.variableType)
+    {
+      case RequestDataType::VARIABLE :
+        Serial.println("This was a variable");
+        variable_memory.set(variable_description.variableName, value_packet.real_part);
+        break;
+      default:
+        Serial.println("Currently unsupported");
+        Serial.print("Data type: ");
+        Serial.println((uint8_t)variable_description.variableType);
+    }
+
+    // Is there more data to come? If so, be prepared to receive another value packet.
+    current_state = States::RECEIVE_END_PACKET;
+    return true;
+  } 
+
+  Serial.println("Invalid type, going to idle");
   go_to_idle_state();
   return false;
+
 }
 
 bool CFXSerial::state_SEND_END_PACKET()
@@ -274,6 +323,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
   // To leave WAIT_FOR_DATA_REQUEST state, we need either a request packet or a variable description packet
   if(packet_type == PacketType::REQUEST)
   {
+    Serial.println("Received data request");
     // Which kind of wakeup?
     data_request = RequestPacket().decode(buffer, size);
     if(!data_request.isValid)
@@ -290,22 +340,31 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
     }
 
     current_state = States::SEND_VARIABLE_DESCRIPTION_PACKET;
+    return true;
   }
-  else if(packet_type == PacketType::VARIABLE_DESCRIPTION)
+
+  if(packet_type == PacketType::VARIABLE_DESCRIPTION)
   {
+    Serial.println("Received variable description packet");
     VariableDescription decodedPacket = VariableDescriptionPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
     {
       go_to_idle_state();
       return false;
     }
+
+    sendDataAck();
+    // Store variable description packet
+    variable_description = decodedPacket;
+    current_state = States::RECEIVE_VALUE_PACKET;
+    return true;
   }
-  else
-  {
-    go_to_idle_state();
-    return false;
-  }
-  return true;
+
+  Serial.print("Packet type invalid - ");
+  Serial.println((uint8_t)packet_type);
+
+  go_to_idle_state();
+  return false;
 }
 
 bool CFXSerial::state_WAIT_FOR_SCREENSHOT_REQUEST()

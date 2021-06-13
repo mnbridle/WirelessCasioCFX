@@ -31,12 +31,13 @@ bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t 
     uint8_t nibble_buffer[16] = {0x00};
     uint8_t signInfoByte = 0;
 
-    // Get information for SignInfoByte
+    // Get information for SignInfoByte and exponent
     hasImaginaryPart = false;
     partIsNegative = (value < 0);
     valueIsOneOrMore = (value >= 1);
     value = abs(value);
     exponent = round(log10(value));
+    
     // Convert value into fixed-point using exponent
     value /= pow(10, exponent);
 
@@ -60,8 +61,6 @@ bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t 
     signInfoByte = hasImaginaryPart << 7 | partIsNegative << 6 | partIsNegative << 4 | valueIsOneOrMore;
     buffer[8] = signInfoByte;
 
-    // exponent_bcd is byte 9 of buffer
-
     if(exponent<0)
     {
         exponent += 100;
@@ -72,15 +71,51 @@ bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t 
     nibble_buffer[0] = (uint8_t)(exponent/10);
     nibble_buffer[1] = (uint8_t)(10*((exponent/10)-nibble_buffer[0]));
 
+    // exponent_bcd is byte 9 of buffer
     buffer[9] = nibble_buffer[0] << 4 | nibble_buffer[1];
 
     return true;
 }
 
-bool PacketCodec::getBinaryFromDouble(double value, uint8_t* buffer, size_t size) 
-{
-    double2bcd(value, buffer, 8, 0);
-    return true;
+double PacketCodec::bcd2double(uint8_t* buffer, size_t size, size_t offset){
+    double value = 0;
+    uint8_t digits = 0;
+    int8_t exponent = 0;
+
+    uint8_t nibble1 = 0;
+    uint8_t nibble0 = 0;
+
+    bool hasImaginaryPart, partIsNegative, valueIsOneOrMore;
+
+    hasImaginaryPart = (buffer[8+offset] & 0x80) >> 7;
+    partIsNegative = (buffer[8+offset] & 0x40) >> 6;
+    valueIsOneOrMore = (buffer[8+offset] & 0x01);
+
+    for (int8_t i=7; i>=0; i--)
+    {
+        digits = ((buffer[i+offset] & 0xF0) >> 4) * 10 + (buffer[i+offset] & 0x0F);
+        value += digits * pow(10, 2*(7-i));
+    }
+
+    Serial.println(value);
+
+    // Put decimal point in the right place
+    value *= pow(10, -14);
+
+    if(partIsNegative)
+    {
+        value *= -1;
+    }
+
+    // Get exponent - lives in buffer[9]
+    exponent = ((buffer[9+offset] & 0xF0) >> 4) * 10 + (buffer[9+offset] & 0x0F);
+
+    if(!valueIsOneOrMore){
+        exponent -= 100;
+    } 
+
+    value *= pow(10, exponent);
+    return value;
 }
 
 PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
@@ -165,27 +200,27 @@ Ack AckPacket::decode(uint8_t* buffer, size_t size)
 Request RequestPacket::decode(uint8_t* buffer, size_t size) 
 {
     Request decodedPacket;
-    std::string request_data_type;
+    std::string tempString;
         
     for (size_t i=5; i<7; i++) {
-        request_data_type.push_back((char)buffer[i]);
+        tempString.push_back((char)buffer[i]);
     }
 
     decodedPacket.variableName = (char)buffer[11];
 
-    if(request_data_type.compare("VM") == 0) 
+    if(tempString.compare("VM") == 0) 
     {
         decodedPacket.variableType = RequestDataType::VARIABLE;
     }
-    else if(request_data_type.compare("PC") == 0) 
+    else if(tempString.compare("PC") == 0) 
     {
         decodedPacket.variableType = RequestDataType::PICTURE;
     }
-    else if(request_data_type.compare("LT") == 0) 
+    else if(tempString.compare("LT") == 0) 
     {
         decodedPacket.variableType = RequestDataType::LIST;
     }
-    else if(request_data_type.compare("MT") == 0) 
+    else if(tempString.compare("MT") == 0) 
     {
         decodedPacket.variableType = RequestDataType::MATRIX;
     }
@@ -280,7 +315,51 @@ uint8_t* VariableDescriptionPacket::encode(VariableDescription packetToEncode)
 VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t size)
 {
     VariableDescription decodedPacket;
+    std::string tempString;
+
     decodedPacket.isValid = checksumValid(buffer, size);
+        
+    for (size_t i=5; i<7; i++) {
+        tempString.push_back((char)buffer[i]);
+    }
+
+    decodedPacket.variableName = (char)buffer[11];
+
+    if(tempString.compare("VM") == 0) 
+    {
+        decodedPacket.variableType = RequestDataType::VARIABLE;
+    }
+    else if(tempString.compare("PC") == 0) 
+    {
+        decodedPacket.variableType = RequestDataType::PICTURE;
+    }
+    else if(tempString.compare("LT") == 0) 
+    {
+        decodedPacket.variableType = RequestDataType::LIST;
+    }
+    else if(tempString.compare("MT") == 0) 
+    {
+        decodedPacket.variableType = RequestDataType::MATRIX;
+    }
+    else 
+    {
+        Serial.print("Unknown type ");
+        Serial.println(tempString.c_str());
+        decodedPacket.variableType = RequestDataType::UNKNOWN;
+    }
+
+    if(buffer[27] == 'C')
+    {
+        decodedPacket.isComplex = true;
+    } else {
+        decodedPacket.isComplex = false;
+    }
+
+    decodedPacket.row = buffer[8];
+    decodedPacket.col = buffer[10];
+
+    decodedPacket.variableInUse = !(decodedPacket.row == 0);
+
     return decodedPacket;
 }
 
@@ -292,7 +371,8 @@ uint8_t* ValuePacket::encode(Value packetToEncode) {
     encodedPacket[4] = packetToEncode.col;
 
     uint8_t real_buf[10];
-    getBinaryFromDouble(packetToEncode.value, real_buf, 10);
+
+    double2bcd(packetToEncode.value, real_buf, 8, 0);
 
     for(size_t i=0; i<10; i++)
     {
@@ -307,6 +387,19 @@ uint8_t* ValuePacket::encode(Value packetToEncode) {
 
 ComplexValue ValuePacket::decode(uint8_t* buffer, size_t size) {
     ComplexValue decodedPacket;
+    decodedPacket.isValid = checksumValid(buffer, size);
+    decodedPacket.row = buffer[2];
+    decodedPacket.col = buffer[4];
+    decodedPacket.isComplex = (buffer[13]&0x80>>7)==1;
+    decodedPacket.real_part = bcd2double(buffer, size, 5);
+
+    if(decodedPacket.isComplex)
+    {
+        decodedPacket.imag_part = bcd2double(buffer, size, 15);
+    } else {
+        decodedPacket.imag_part = 0;
+    }
+
     return decodedPacket;
 }
 
@@ -326,7 +419,7 @@ uint8_t* EndPacket::encode(End packetToEncode) {
 
 End EndPacket::decode(uint8_t* buffer, size_t size) {
     End decodedPacket;
-    // We don't actually care what the contents are, we'll always end the conversation here
+    // We don't actually care what the contents are, it will always be valid
     decodedPacket.isValid = true;
 
     return decodedPacket;
