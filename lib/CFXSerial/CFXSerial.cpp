@@ -94,27 +94,22 @@ void CFXSerial::sendByte(uint8_t txByte)
 
 void CFXSerial::sendBuffer(uint8_t* buffer, size_t size)
 {
-  Serial.print("Sending packet of size ");
-  Serial.println(size);
-
   for(size_t i=0; i<size; i++)
   {
     Serial2.write(buffer[i]);
-    Serial.print(buffer[i], HEX);
-    Serial.print(" ");
   }
-  Serial.println("");
 }
 
 void CFXSerial::sendWakeUpAck()
 {
+  delay(10);
   sendByte(0x13);
 }
 
 void CFXSerial::sendDataAck()
 {
   // Delay so that we don't ACK too quickly
-  delay(30);
+  delay(10);
   sendByte(0x06);
 }
 
@@ -122,9 +117,6 @@ void CFXSerial::sendDataAck()
 
 bool CFXSerial::execute_current_state() {
   bool isSuccessful = false;
-  
-  Serial.print("State: ");
-  Serial.println((uint8_t)current_state);
 
   switch(current_state) {
     case States::IDLE :

@@ -45,14 +45,12 @@ bool PacketCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffe
         value *= 10;
     }
 
-    Serial.println("Copy nibbles into buffer");
     // Get nibbles out and create the actual buffer
     for(uint8_t i=0; i<8; i++)
     {
         buffer[i + offset] = nibble_buffer[i*2] << 4 | nibble_buffer[i*2 + 1];
     }
 
-    Serial.println("Make signInfoByte");
     // signInfoByte is byte 8 of buffer
     signInfoByte = hasImaginaryPart << 7 | partIsNegative << 6 | partIsNegative << 4 | valueIsOneOrMore;
     buffer[8 + offset] = signInfoByte;
@@ -68,9 +66,7 @@ bool PacketCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffe
     nibble_buffer[1] = (uint8_t)(10*((exponent/10)-nibble_buffer[0]));
 
     // exponent_bcd is byte 9 of buffer
-    Serial.println("Do exponent");
     buffer[9 + offset] = nibble_buffer[0] << 4 | nibble_buffer[1];
-    Serial.println("Returning!");
 
     return true;
 }
@@ -80,22 +76,17 @@ double PacketCodec::bcd2double(uint8_t* buffer, size_t size, size_t offset){
     uint8_t digits = 0;
     int8_t exponent = 0;
 
-    uint8_t nibble1 = 0;
-    uint8_t nibble0 = 0;
-
     bool hasImaginaryPart, partIsNegative, valueIsOneOrMore;
 
-    hasImaginaryPart = (buffer[8+offset] & 0x80) >> 7;
-    partIsNegative = (buffer[8+offset] & 0x40) >> 6;
-    valueIsOneOrMore = (buffer[8+offset] & 0x01);
+    hasImaginaryPart = (buffer[8+offset] >> 7) & 0x01;
+    partIsNegative = (buffer[8+offset] >> 6) & 0x01;
+    valueIsOneOrMore = buffer[8+offset] & 0x01;
 
     for (int8_t i=7; i>=0; i--)
     {
         digits = ((buffer[i+offset] & 0xF0) >> 4) * 10 + (buffer[i+offset] & 0x0F);
         value += digits * pow(10, 2*(7-i));
     }
-
-    Serial.println(value);
 
     // Put decimal point in the right place
     value *= pow(10, -14);
@@ -393,7 +384,7 @@ ComplexValue ValuePacket::decode(uint8_t* buffer, size_t size) {
     decodedPacket.isValid = checksumValid(buffer, size);
     decodedPacket.row = buffer[2];
     decodedPacket.col = buffer[4];
-    decodedPacket.isComplex = (buffer[13]&0x80>>7)==1;
+    decodedPacket.isComplex = (bool)((buffer[13]>>7) & 0x01);
     decodedPacket.real_part = bcd2double(buffer, size, 5);
 
     if(decodedPacket.isComplex)
