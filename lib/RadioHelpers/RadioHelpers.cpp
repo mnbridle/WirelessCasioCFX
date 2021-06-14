@@ -11,12 +11,18 @@ void setModeRx() {
     drf4463.setModeRx();
 }
 
-RadioStatus getRadioStatus() {
-  RadioStatus status = RadioStatus();
+SystemStatus getRadioStatus() {
+  SystemStatus status = SystemStatus();
 
-  status.batteryVoltage = drf4463.get_battery_voltage();
-  status.temperature = drf4463.get_temperature();
-  status.lastRssi = drf4463.lastRssi();
+  status.batteryVoltage.isComplex = false;
+  status.radio_temperature.isComplex = false;
+  status.uptime.isComplex = false;
+  status.lastRssi.isComplex = false;
+
+  status.batteryVoltage.real_part = drf4463.get_battery_voltage();
+  status.radio_temperature.real_part = drf4463.get_temperature();
+  status.uptime.real_part = millis();
+  status.lastRssi.real_part = drf4463.lastRssi();
 
   return status;
 }

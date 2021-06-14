@@ -78,8 +78,7 @@ class PacketCodec {
         bool checksumValid(uint8_t* buffer, size_t size);
         uint8_t calculateChecksum(uint8_t* buffer, size_t size);
 
-        double getDoubleFromBinary(uint8_t* buffer, size_t size);
-        bool double2bcd(double dec, uint8_t* buffer, size_t size, size_t offset);
+        bool double2bcd(double dec, bool hasImaginaryPart, uint8_t* buffer, size_t size, size_t offset);
         double bcd2double(uint8_t* buffer, size_t size, size_t offset);
 
         PacketType getPacketType(uint8_t* buffer, size_t size);

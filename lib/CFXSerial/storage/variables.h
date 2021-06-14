@@ -1,11 +1,12 @@
 #include <map>
+#include <codecs/codec.hpp>
 
 class VariableStorage
 {
     public:
         VariableStorage();
-        double get(char variableName);
-        void set(char variableName, double value);
+        ComplexValue get(char variableName);
+        void set(char variableName, ComplexValue value);
     private:
-        std::map<char, double> storage;
+        std::map<char, ComplexValue> storage;
 };

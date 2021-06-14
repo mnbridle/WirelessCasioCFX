@@ -4,21 +4,21 @@ VariableStorage::VariableStorage()
 {
 }
 
-double VariableStorage::get(char variableName)
+ComplexValue VariableStorage::get(char variableName)
 {
-    double value;
+    ComplexValue value;
     if (storage.find(variableName) != storage.end())
     {
         value = storage[variableName];
     }
     else
     {
-        value = 1.234567890123;
+        value.isValid = false;
     }
     return value;
 }
 
-void VariableStorage::set(char variableName, double value)
+void VariableStorage::set(char variableName, ComplexValue value)
 {
     storage[variableName] = value;
 }

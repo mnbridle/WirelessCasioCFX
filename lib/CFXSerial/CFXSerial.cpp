@@ -25,7 +25,12 @@ void setUpSerialPort()
 CFXSerial::CFXSerial(void)
 {
   go_to_idle_state();
-  variable_memory.set('A', 420.69);
+  ComplexValue default_value;
+  default_value.isComplex = true;
+  default_value.real_part = 0.42424242424242;
+  default_value.imag_part = 0.21212121212121;
+  
+  variable_memory.set('A', default_value);
 }
 
 CFXSerial::~CFXSerial(void)
@@ -89,10 +94,16 @@ void CFXSerial::sendByte(uint8_t txByte)
 
 void CFXSerial::sendBuffer(uint8_t* buffer, size_t size)
 {
+  Serial.print("Sending packet of size ");
+  Serial.println(size);
+
   for(size_t i=0; i<size; i++)
   {
     Serial2.write(buffer[i]);
+    Serial.print(buffer[i], HEX);
+    Serial.print(" ");
   }
+  Serial.println("");
 }
 
 void CFXSerial::sendWakeUpAck()
@@ -102,6 +113,8 @@ void CFXSerial::sendWakeUpAck()
 
 void CFXSerial::sendDataAck()
 {
+  // Delay so that we don't ACK too quickly
+  delay(30);
   sendByte(0x06);
 }
 
@@ -110,6 +123,9 @@ void CFXSerial::sendDataAck()
 bool CFXSerial::execute_current_state() {
   bool isSuccessful = false;
   
+  Serial.print("State: ");
+  Serial.println((uint8_t)current_state);
+
   switch(current_state) {
     case States::IDLE :
         isSuccessful = state_IDLE();
@@ -239,7 +255,7 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
     {
       case RequestDataType::VARIABLE :
         Serial.println("This was a variable");
-        variable_memory.set(variable_description.variableName, value_packet.real_part);
+        variable_memory.set(variable_description.variableName, value_packet);
         break;
       default:
         Serial.println("Currently unsupported");
@@ -269,14 +285,21 @@ bool CFXSerial::state_SEND_END_PACKET()
 bool CFXSerial::state_SEND_VALUE_PACKET()
 {
   bool packetReceived = false;
-  Value packetToEncode;
-
+  ComplexValue packetToEncode;
+  
+  packetToEncode = variable_memory.get(data_request.variableName);
   packetToEncode.row = 1;
   packetToEncode.col = 1;
-  packetToEncode.value = variable_memory.get(data_request.variableName);
   packetToEncode.isValid = true;
 
-  sendBuffer(ValuePacket().encode(packetToEncode), 16);
+  if(packetToEncode.isComplex)
+  {
+    sendBuffer(ValuePacket().encode(packetToEncode), 26);
+  }
+  else
+  {
+    sendBuffer(ValuePacket().encode(packetToEncode), 16);
+  }
 
   if(!wait_for_ack())
   {
@@ -297,8 +320,18 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   // Copy bits from data request to packetToEncode
   packetToEncode.variableType = data_request.variableType;
   packetToEncode.variableName = data_request.variableName;
-  packetToEncode.variableInUse = true;
-  packetToEncode.isComplex = false;
+
+  if(packetToEncode.variableType == RequestDataType::VARIABLE)
+  {
+    // Get variable from storage
+    ComplexValue requested_variable = variable_memory.get(data_request.variableName);
+    packetToEncode.variableInUse = true;
+    packetToEncode.isComplex = requested_variable.isComplex;
+  } else {
+    Serial.println("Request currently unsupported!");
+    go_to_idle_state();
+    return false;
+  }
 
   sendBuffer(VariableDescriptionPacket().encode(packetToEncode), 50);
 
@@ -331,6 +364,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
       go_to_idle_state();
       return false;
     }
+
     sendDataAck();
 
     if(!wait_for_ack())
@@ -345,7 +379,6 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
 
   if(packet_type == PacketType::VARIABLE_DESCRIPTION)
   {
-    Serial.println("Received variable description packet");
     VariableDescription decodedPacket = VariableDescriptionPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
     {

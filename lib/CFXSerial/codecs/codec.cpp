@@ -19,20 +19,14 @@ uint8_t PacketCodec::calculateChecksum(uint8_t* buffer, size_t size) {
     return checksum;
 }
 
-double PacketCodec::getDoubleFromBinary(uint8_t* buffer, size_t size) {
-    double value = 0.00;
-    return value;
-}
-
-bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t offset) 
+bool PacketCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffer, size_t size, size_t offset) 
 {
-    bool hasImaginaryPart, partIsNegative, valueIsOneOrMore;
+    bool partIsNegative, valueIsOneOrMore;
     float exponent;
     uint8_t nibble_buffer[16] = {0x00};
     uint8_t signInfoByte = 0;
 
     // Get information for SignInfoByte and exponent
-    hasImaginaryPart = false;
     partIsNegative = (value < 0);
     valueIsOneOrMore = (value >= 1);
     value = abs(value);
@@ -51,15 +45,17 @@ bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t 
         value *= 10;
     }
 
+    Serial.println("Copy nibbles into buffer");
     // Get nibbles out and create the actual buffer
     for(uint8_t i=0; i<8; i++)
     {
-        buffer[i] = nibble_buffer[i*2] << 4 | nibble_buffer[i*2 + 1];
+        buffer[i + offset] = nibble_buffer[i*2] << 4 | nibble_buffer[i*2 + 1];
     }
 
+    Serial.println("Make signInfoByte");
     // signInfoByte is byte 8 of buffer
     signInfoByte = hasImaginaryPart << 7 | partIsNegative << 6 | partIsNegative << 4 | valueIsOneOrMore;
-    buffer[8] = signInfoByte;
+    buffer[8 + offset] = signInfoByte;
 
     if(exponent<0)
     {
@@ -72,7 +68,9 @@ bool PacketCodec::double2bcd(double value, uint8_t* buffer, size_t size, size_t 
     nibble_buffer[1] = (uint8_t)(10*((exponent/10)-nibble_buffer[0]));
 
     // exponent_bcd is byte 9 of buffer
-    buffer[9] = nibble_buffer[0] << 4 | nibble_buffer[1];
+    Serial.println("Do exponent");
+    buffer[9 + offset] = nibble_buffer[0] << 4 | nibble_buffer[1];
+    Serial.println("Returning!");
 
     return true;
 }
@@ -363,24 +361,29 @@ VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t si
     return decodedPacket;
 }
 
-uint8_t* ValuePacket::encode(Value packetToEncode) {
+uint8_t* ValuePacket::encode(ComplexValue packetToEncode) {
+    uint8_t packet_length = 16;
+
     encodedPacket[0] = ':';
     encodedPacket[1] = 0x00;
     encodedPacket[2] = packetToEncode.row;
     encodedPacket[3] = 0x00;
     encodedPacket[4] = packetToEncode.col;
 
-    uint8_t real_buf[10];
-
-    double2bcd(packetToEncode.value, real_buf, 8, 0);
-
-    for(size_t i=0; i<10; i++)
+    if(packetToEncode.isComplex)
     {
-        encodedPacket[5+i] = real_buf[i];
+        packet_length = 26;
+    }
+
+    double2bcd(packetToEncode.real_part, packetToEncode.isComplex, encodedPacket, packet_length, 5);
+
+    if(packetToEncode.isComplex)
+    {
+        double2bcd(packetToEncode.imag_part, packetToEncode.isComplex, encodedPacket, packet_length, 15);
     }
 
     // Get checksum
-    encodedPacket[15] = calculateChecksum(encodedPacket, 16);
+    encodedPacket[packet_length - 1] = calculateChecksum(encodedPacket, packet_length);
 
     return encodedPacket;
 }

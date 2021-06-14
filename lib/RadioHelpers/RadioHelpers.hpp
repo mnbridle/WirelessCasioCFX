@@ -2,6 +2,7 @@
 
 #include <RadioHead.h>
 #include <RH_RF24.h>
+#include <codecs/codec.hpp>
 
 // Define IO pins
 #define DRF4463_SDN 0
@@ -11,14 +12,15 @@
 #define DRF4463_SDI 4
 #define DRF4463_nSEL 13
 
-class RadioStatus
+class SystemStatus
 {
     public:
-        float batteryVoltage;
-        float temperature;
-        int16_t lastRssi;
+        ComplexValue batteryVoltage;
+        ComplexValue uptime;
+        ComplexValue radio_temperature;
+        ComplexValue lastRssi;
 };
 
 bool setupRadio();
 void setModeRx();
-RadioStatus getRadioStatus();
+SystemStatus getRadioStatus();
