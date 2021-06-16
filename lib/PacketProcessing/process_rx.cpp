@@ -5,6 +5,10 @@ void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
     // TODO: Should state machine live inside CFXSerial or here?
 
+    setLEDState(YELLOW);
+    // cfxSerial.cfx_software_interface();
+    setLEDState(GREEN);
+
     SystemStatus status;
     VariableData variable_data;
     double led_colour = 0;

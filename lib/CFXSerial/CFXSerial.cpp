@@ -24,12 +24,29 @@ void setUpSerialPort()
 
 CFXSerial::CFXSerial(void)
 {
-  debugMode = true;
+  debugMode = false;
   go_to_idle_state();
 }
 
 CFXSerial::~CFXSerial(void)
 {
+}
+
+void CFXSerial::cfx_software_interface(void)
+{
+  Serial.begin(9600, SERIAL_8N2);
+  
+  while(1)
+  {
+    if (Serial.available())
+    {
+      Serial2.write(Serial.read());
+    }
+    if (Serial2.available())
+    {
+      Serial.write(Serial2.read());
+    }
+  }
 }
 
 bool CFXSerial::receivePacket()
@@ -204,7 +221,6 @@ bool CFXSerial::state_IDLE()
   // To leave IDLE state, we need a wakeup
   if(packet_type == PacketType::WAKE_UP)
   {
-    Serial.println("-------- WAKEUP --------");
     // Which kind of wakeup?
     WakeUp decodedPacket = WakeUpPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
@@ -290,6 +306,11 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
         return true;
       case RequestDataType::MATRIX :
         matrix_memory.append(variable_description.variableName, value_packet);
+        if(debugMode)
+        {
+          Serial.print("Data in buffer: ");
+          Serial.println(matrix_memory.get_all(variable_description.variableName).matrix_data.size());
+        }
         return true;
       default:
         Serial.println("Currently unsupported");
@@ -364,9 +385,23 @@ bool CFXSerial::send_matrix()
 {
   MatrixData matrix_data = matrix_memory.get_all(data_request.variableName);
   int item_count = 0;
+
+  if(debugMode)
+  {
+    Serial.print("Matrix data is valid: ");
+    Serial.println(matrix_data.isValid);
+    Serial.print("Matrix size: ");
+    Serial.println(matrix_data.matrix_data.size());
+  }
   
   for (ComplexValue value : matrix_data.matrix_data) {    
     item_count += 1;
+
+    if(debugMode)
+    {
+      Serial.print("Item: ");
+      Serial.println(item_count);
+    }
 
     if(matrix_data.isComplex)
     {
@@ -432,6 +467,10 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   if(debugMode)
   {
     Serial.println("Sending variable description packet");
+    Serial.print("Rows: ");
+    Serial.print(packetToEncode.row);
+    Serial.print(", cols: ");
+    Serial.println(packetToEncode.col);
   }
   sendBuffer(VariableDescriptionPacket().encode(packetToEncode), 50);
 
@@ -454,7 +493,6 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
   // To leave WAIT_FOR_DATA_REQUEST state, we need either a request packet or a variable description packet
   if(packet_type == PacketType::REQUEST)
   {
-    Serial.println("Received data request");
     // Which kind of wakeup?
     data_request = RequestPacket().decode(buffer, size);
     if(!data_request.isValid)

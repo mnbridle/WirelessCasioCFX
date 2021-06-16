@@ -78,6 +78,8 @@ class CFXSerial {
         bool state_RECEIVE_SCREENSHOT_DATA();
         bool state_RECEIVE_END_PACKET();
 
+        void cfx_software_interface(void);
+
         uint8_t buffer[1024];
         size_t size;
         PacketType packet_type;

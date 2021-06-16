@@ -31,18 +31,28 @@ bool PacketCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffe
     valueIsOneOrMore = (value >= 1);
     value = abs(value);
     exponent = round(log10(value));
-    
-    // Convert value into fixed-point using exponent
-    value /= pow(10, exponent);
 
     // First nibble is always zero
     nibble_buffer[0] = 0;
 
-    for(uint8_t i=1; i<16; i++)
+    if (value == 0)
     {
-        nibble_buffer[i] = (uint8_t)value;
-        value -= (uint8_t)value;
-        value *= 10;
+        for(uint8_t i=1; i<16; i++)
+        {
+            nibble_buffer[i] = 0x00;
+        }
+    }
+    else
+    {
+        // Convert value into fixed-point using exponent
+        value /= pow(10, exponent);
+
+        for(uint8_t i=1; i<16; i++)
+        {
+            nibble_buffer[i] = (uint8_t)value;
+            value -= (uint8_t)value;
+            value *= 10;
+        }
     }
 
     // Get nibbles out and create the actual buffer
@@ -195,23 +205,25 @@ Request RequestPacket::decode(uint8_t* buffer, size_t size)
         tempString.push_back((char)buffer[i]);
     }
 
-    decodedPacket.variableName = (char)buffer[11];
-
     if(tempString.compare("VM") == 0) 
     {
         decodedPacket.variableType = RequestDataType::VARIABLE;
+        decodedPacket.variableName = (char)buffer[11];
     }
     else if(tempString.compare("PC") == 0) 
     {
         decodedPacket.variableType = RequestDataType::PICTURE;
+        decodedPacket.variableName = (char)buffer[11];
     }
     else if(tempString.compare("LT") == 0) 
     {
         decodedPacket.variableType = RequestDataType::LIST;
+        decodedPacket.variableName = (char)buffer[11];
     }
     else if(tempString.compare("MT") == 0) 
     {
         decodedPacket.variableType = RequestDataType::MATRIX;
+        decodedPacket.variableName = (char)buffer[15];
     }
     else 
     {
@@ -262,9 +274,18 @@ uint8_t* VariableDescriptionPacket::encode(VariableDescription packetToEncode)
     }
 
     encodedPacket[7] = 0x00;
-    encodedPacket[8] = packetToEncode.variableInUse;
     encodedPacket[9] = 0x00;
-    encodedPacket[10] = packetToEncode.variableInUse;
+
+    if (packetToEncode.variableType == RequestDataType::MATRIX)
+    {
+        encodedPacket[8] = packetToEncode.row;
+        encodedPacket[10] = packetToEncode.col;
+    } 
+    else 
+    {
+        encodedPacket[8] = packetToEncode.variableInUse;
+        encodedPacket[10] = packetToEncode.variableInUse;
+    }
 
     // If matrix, the name will be Mat A
     // If variable, the name will just be A
@@ -342,10 +363,12 @@ VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t si
     else if(tempString.compare("PC") == 0) 
     {
         decodedPacket.variableType = RequestDataType::PICTURE;
+        decodedPacket.variableName = (char)buffer[11];
     }
     else if(tempString.compare("LT") == 0) 
     {
         decodedPacket.variableType = RequestDataType::LIST;
+        decodedPacket.variableName = (char)buffer[11];
     }
     else if(tempString.compare("MT") == 0) 
     {

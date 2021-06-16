@@ -6,11 +6,7 @@ MatrixStorage::MatrixStorage()
 
 bool MatrixStorage::clear(char variableName) 
 {
-    storage[variableName].matrix_data.clear();
-    storage[variableName].rows = 0;
-    storage[variableName].cols = 0;
-    storage[variableName].isValid = false;
-
+    storage.erase(variableName);
     return true;
 }
 
@@ -18,7 +14,7 @@ bool MatrixStorage::init(char variableName, uint8_t rows, uint8_t cols, bool isC
 {
     if (is_initialised(variableName))
     {
-        return false;
+        clear(variableName);
     }
 
     MatrixData matrix_data;
