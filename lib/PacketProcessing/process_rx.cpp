@@ -6,6 +6,7 @@ void main_processor(CFXSerial &cfxSerial) {
     // TODO: Should state machine live inside CFXSerial or here?
 
     SystemStatus status;
+    VariableData variable_data;
     double led_colour = 0;
 
     while(1) {
@@ -20,7 +21,8 @@ void main_processor(CFXSerial &cfxSerial) {
         cfxSerial.variable_memory.set('U', status.uptime);
 
         // Now do something exciting - change the LED colour
-        led_colour = (cfxSerial.variable_memory.get('L')).real_part;
+        variable_data = cfxSerial.variable_memory.get('L');
+        led_colour = variable_data.data.real_part;
         setLEDState((long)led_colour);
     }
 }

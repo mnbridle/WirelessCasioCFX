@@ -24,13 +24,8 @@ void setUpSerialPort()
 
 CFXSerial::CFXSerial(void)
 {
+  debugMode = true;
   go_to_idle_state();
-  ComplexValue default_value;
-  default_value.isComplex = true;
-  default_value.real_part = 0.42424242424242;
-  default_value.imag_part = 0.21212121212121;
-  
-  variable_memory.set('A', default_value);
 }
 
 CFXSerial::~CFXSerial(void)
@@ -84,20 +79,57 @@ bool CFXSerial::receivePacket()
   packet_type = PacketCodec().getPacketType(buffer, i);
   size = i;
 
+  if(debugMode)
+  {
+    debug_buffer(buffer, size, false);
+  }
+
   return true;
 }
 
 void CFXSerial::sendByte(uint8_t txByte) 
 {
-  Serial2.write(txByte);
+  uint8_t buffer[1];
+  buffer[0] = txByte;
+
+  sendBuffer(buffer, 1);
+  // Serial2.write(txByte);
 }
 
 void CFXSerial::sendBuffer(uint8_t* buffer, size_t size)
 {
+  if(debugMode)
+  {
+    debug_buffer(buffer, size, true);
+  }
+
   for(size_t i=0; i<size; i++)
   {
     Serial2.write(buffer[i]);
   }
+}
+
+void CFXSerial::debug_buffer(uint8_t* buffer, size_t size, bool is_sending)
+{
+  Serial.print("len=");
+  Serial.print(size);
+  Serial.print(", ");
+
+  if(is_sending)
+  {
+    Serial.println("transmitting");
+  }
+  else
+  {
+    Serial.println("receiving");
+  }
+
+  for(size_t i=0; i<size; i++)
+  {
+    Serial.print(buffer[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
 }
 
 void CFXSerial::sendWakeUpAck()
@@ -117,6 +149,12 @@ void CFXSerial::sendDataAck()
 
 bool CFXSerial::execute_current_state() {
   bool isSuccessful = false;
+
+  if(debugMode)
+  {
+    Serial.print("Current state: ");
+    Serial.println((uint8_t)current_state);
+  }
 
   switch(current_state) {
     case States::IDLE :
@@ -166,6 +204,7 @@ bool CFXSerial::state_IDLE()
   // To leave IDLE state, we need a wakeup
   if(packet_type == PacketType::WAKE_UP)
   {
+    Serial.println("-------- WAKEUP --------");
     // Which kind of wakeup?
     WakeUp decodedPacket = WakeUpPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
@@ -246,24 +285,27 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
     switch(variable_description.variableType)
     {
       case RequestDataType::VARIABLE :
-        Serial.println("This was a variable");
         variable_memory.set(variable_description.variableName, value_packet);
-        break;
+        current_state = States::RECEIVE_END_PACKET;
+        return true;
+      case RequestDataType::MATRIX :
+        matrix_memory.append(variable_description.variableName, value_packet);
+        return true;
       default:
         Serial.println("Currently unsupported");
         Serial.print("Data type: ");
         Serial.println((uint8_t)variable_description.variableType);
+        go_to_idle_state();
+        return false;
     }
+  }
 
-    // Is there more data to come? If so, be prepared to receive another value packet.
-    current_state = States::RECEIVE_END_PACKET;
+  if(packet_type == PacketType::END)
+  {
+    Serial.println("Received END, going to idle");
+    go_to_idle_state();
     return true;
   } 
-
-  Serial.println("Invalid type, going to idle");
-  go_to_idle_state();
-  return false;
-
 }
 
 bool CFXSerial::state_SEND_END_PACKET()
@@ -276,30 +318,70 @@ bool CFXSerial::state_SEND_END_PACKET()
 
 bool CFXSerial::state_SEND_VALUE_PACKET()
 {
-  bool packetReceived = false;
-  ComplexValue packetToEncode;
+  bool succeeded = false;
   
-  packetToEncode = variable_memory.get(data_request.variableName);
-  packetToEncode.row = 1;
-  packetToEncode.col = 1;
-  packetToEncode.isValid = true;
-
-  if(packetToEncode.isComplex)
+  if(request_type == RequestDataType::VARIABLE)
   {
-    sendBuffer(ValuePacket().encode(packetToEncode), 26);
+    succeeded = send_variable();
   }
-  else
+  else if(request_type == RequestDataType::MATRIX)
   {
-    sendBuffer(ValuePacket().encode(packetToEncode), 16);
+    succeeded = send_matrix();
   }
 
-  if(!wait_for_ack())
+  if(!succeeded)
   {
     go_to_idle_state();
     return false;
   }
 
   current_state = States::SEND_END_PACKET;
+
+  return true;
+}
+
+bool CFXSerial::send_variable()
+{
+    VariableData packetToEncode = variable_memory.get(data_request.variableName);
+    ComplexValue data_to_send = packetToEncode.data;
+    data_to_send.row = 1;
+    data_to_send.col = 1;
+    packetToEncode.isValid = true;
+
+    if(packetToEncode.isComplex)
+    {
+      sendBuffer(ValuePacket().encode(data_to_send, true), 26);
+    }
+    else
+    {
+      sendBuffer(ValuePacket().encode(data_to_send, false), 16);
+    }
+
+    return wait_for_ack();
+}
+
+bool CFXSerial::send_matrix()
+{
+  MatrixData matrix_data = matrix_memory.get_all(data_request.variableName);
+  int item_count = 0;
+  
+  for (ComplexValue value : matrix_data.matrix_data) {    
+    item_count += 1;
+
+    if(matrix_data.isComplex)
+    {
+      sendBuffer(ValuePacket().encode(value, true), 26);
+    }
+    else
+    {
+      sendBuffer(ValuePacket().encode(value, false), 16);
+    }
+
+    if(!wait_for_ack())
+    {
+      return false;
+    }
+  }
 
   return true;
 }
@@ -316,20 +398,44 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   if(packetToEncode.variableType == RequestDataType::VARIABLE)
   {
     // Get variable from storage
-    ComplexValue requested_variable = variable_memory.get(data_request.variableName);
+    VariableData requested_variable = variable_memory.get(data_request.variableName);
+    if (!requested_variable.isValid)
+    {
+      variable_memory.init(data_request.variableName, false);
+      requested_variable = variable_memory.get(data_request.variableName);
+    }
+
     packetToEncode.variableInUse = true;
     packetToEncode.isComplex = requested_variable.isComplex;
-  } else {
+    packetToEncode.row = 1;
+    packetToEncode.col = 1;
+  } 
+  else if(packetToEncode.variableType == RequestDataType::MATRIX) 
+  {
+    MatrixData requested_variable = matrix_memory.get_all(data_request.variableName);
+    if (!requested_variable.isValid)
+    {
+      go_to_idle_state();
+      return false;
+    }
+    packetToEncode.variableInUse = true;
+    packetToEncode.isComplex = requested_variable.isComplex;
+    packetToEncode.row = requested_variable.rows;
+    packetToEncode.col = requested_variable.cols;
+  }
+  else {
     Serial.println("Request currently unsupported!");
     go_to_idle_state();
     return false;
   }
 
+  if(debugMode)
+  {
+    Serial.println("Sending variable description packet");
+  }
   sendBuffer(VariableDescriptionPacket().encode(packetToEncode), 50);
 
-  // Just transition to SEND_VALUE_PACKET
-  // Clear anything bogus that's been received into the buffer
-  packetReceived = receivePacket();
+  wait_for_ack();
   current_state = States::SEND_VALUE_PACKET;
 
   return true;
@@ -376,6 +482,47 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
     {
       go_to_idle_state();
       return false;
+    }
+
+    // What are we about to receive?
+    request_type = decodedPacket.variableType;
+    variableName = decodedPacket.variableName;
+    data_items_to_send = decodedPacket.row * decodedPacket.col;
+
+    if(decodedPacket.variableType == RequestDataType::MATRIX)
+    {
+      matrix_memory.init(decodedPacket.variableName, decodedPacket.row, decodedPacket.col, decodedPacket.isComplex);
+      if(debugMode)
+      {
+        Serial.print("Matrix ");
+        Serial.print(variableName);
+        Serial.print(" has ");
+        Serial.print(decodedPacket.row);
+        Serial.print(" rows, ");
+        Serial.print(decodedPacket.col);
+        Serial.print(" cols and is ");
+        if(decodedPacket.isComplex)
+        {
+          Serial.println("complex");
+        } else {
+          Serial.println("not complex");
+        }
+      }
+    }
+    else if(decodedPacket.variableType == RequestDataType::VARIABLE)
+    {
+      variable_memory.init(decodedPacket.variableName, decodedPacket.isComplex);
+      if(debugMode)
+      {
+        Serial.print("Variable ");
+        Serial.print(variableName);
+        if(decodedPacket.isComplex)
+        {
+          Serial.println(" is complex");
+        } else {
+          Serial.println(" is not complex");
+        }
+      }
     }
 
     sendDataAck();

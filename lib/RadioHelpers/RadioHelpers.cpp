@@ -14,11 +14,6 @@ void setModeRx() {
 SystemStatus getRadioStatus() {
   SystemStatus status = SystemStatus();
 
-  status.batteryVoltage.isComplex = false;
-  status.radio_temperature.isComplex = false;
-  status.uptime.isComplex = false;
-  status.lastRssi.isComplex = false;
-
   status.batteryVoltage.real_part = drf4463.get_battery_voltage();
   status.radio_temperature.real_part = drf4463.get_temperature();
   status.uptime.real_part = millis();

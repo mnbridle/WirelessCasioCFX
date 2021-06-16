@@ -225,7 +225,7 @@ Request RequestPacket::decode(uint8_t* buffer, size_t size)
 
 uint8_t* VariableDescriptionPacket::encode(VariableDescription packetToEncode)
 {
-    String tempString;
+    std::string tempString;
     uint8_t offset = 0;
 
     tempString = ":VAL";
@@ -265,19 +265,41 @@ uint8_t* VariableDescriptionPacket::encode(VariableDescription packetToEncode)
     encodedPacket[8] = packetToEncode.variableInUse;
     encodedPacket[9] = 0x00;
     encodedPacket[10] = packetToEncode.variableInUse;
-    encodedPacket[11] = packetToEncode.variableName;
 
-    offset = 12;
-    for (size_t i=0; i<8; i++)
+    // If matrix, the name will be Mat A
+    // If variable, the name will just be A
+
+    if (packetToEncode.variableType == RequestDataType::VARIABLE)
     {
-        encodedPacket[i+offset] = 0xFF;
+        encodedPacket[11] = packetToEncode.variableName;
+        offset = 12;
+        for (size_t i=0; i<8; i++)
+        {
+            encodedPacket[i+offset] = 0xFF;
+        }
+        tempString = "Variable";
+        offset = 19;
+        for (size_t i=0; i<8; i++)
+        {
+            encodedPacket[i+offset] = tempString[i];
+        }
     }
-
-    tempString = "Variable";
-    offset = 19;
-    for (size_t i=0; i<8; i++)
+    else if (packetToEncode.variableType == RequestDataType::MATRIX)
     {
-        encodedPacket[i+offset] = tempString[i];
+        tempString = "Mat ";
+        offset = 11;
+        for (size_t i=0; i<4; i++)
+        {
+            encodedPacket[i+offset] = tempString[i];
+        }
+        encodedPacket[15] = packetToEncode.variableName;
+        offset = 16;
+        for (size_t i=0; i<11; i++)
+        {
+            encodedPacket[i+offset] = 0xFF;
+        }
+    } else {
+        Serial.println("Unknown packet type!");
     }
 
     if(packetToEncode.isComplex)
@@ -312,11 +334,10 @@ VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t si
         tempString.push_back((char)buffer[i]);
     }
 
-    decodedPacket.variableName = (char)buffer[11];
-
     if(tempString.compare("VM") == 0) 
     {
         decodedPacket.variableType = RequestDataType::VARIABLE;
+        decodedPacket.variableName = (char)buffer[11];
     }
     else if(tempString.compare("PC") == 0) 
     {
@@ -329,6 +350,7 @@ VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t si
     else if(tempString.compare("MT") == 0) 
     {
         decodedPacket.variableType = RequestDataType::MATRIX;
+        decodedPacket.variableName = (char)buffer[15];
     }
     else 
     {
@@ -352,7 +374,7 @@ VariableDescription VariableDescriptionPacket::decode(uint8_t* buffer, size_t si
     return decodedPacket;
 }
 
-uint8_t* ValuePacket::encode(ComplexValue packetToEncode) {
+uint8_t* ValuePacket::encode(ComplexValue packetToEncode, bool isComplex) {
     uint8_t packet_length = 16;
 
     encodedPacket[0] = ':';
@@ -361,16 +383,16 @@ uint8_t* ValuePacket::encode(ComplexValue packetToEncode) {
     encodedPacket[3] = 0x00;
     encodedPacket[4] = packetToEncode.col;
 
-    if(packetToEncode.isComplex)
+    if(isComplex)
     {
         packet_length = 26;
     }
 
-    double2bcd(packetToEncode.real_part, packetToEncode.isComplex, encodedPacket, packet_length, 5);
+    double2bcd(packetToEncode.real_part, isComplex, encodedPacket, packet_length, 5);
 
-    if(packetToEncode.isComplex)
+    if(isComplex)
     {
-        double2bcd(packetToEncode.imag_part, packetToEncode.isComplex, encodedPacket, packet_length, 15);
+        double2bcd(packetToEncode.imag_part, isComplex, encodedPacket, packet_length, 15);
     }
 
     // Get checksum
@@ -381,13 +403,14 @@ uint8_t* ValuePacket::encode(ComplexValue packetToEncode) {
 
 ComplexValue ValuePacket::decode(uint8_t* buffer, size_t size) {
     ComplexValue decodedPacket;
-    decodedPacket.isValid = checksumValid(buffer, size);
+    bool isComplex = (bool)((buffer[13]>>7) & 0x01);
+
+    // decodedPacket.isValid = checksumValid(buffer, size);
     decodedPacket.row = buffer[2];
     decodedPacket.col = buffer[4];
-    decodedPacket.isComplex = (bool)((buffer[13]>>7) & 0x01);
     decodedPacket.real_part = bcd2double(buffer, size, 5);
 
-    if(decodedPacket.isComplex)
+    if(isComplex)
     {
         decodedPacket.imag_part = bcd2double(buffer, size, 15);
     } else {

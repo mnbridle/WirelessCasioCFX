@@ -57,16 +57,13 @@ struct Value {
     uint8_t row;
     uint8_t col;
     double value;
-    bool isValid;
 };
 
 struct ComplexValue {
     uint8_t row;
     uint8_t col;
-    bool isComplex;
     double real_part;
     double imag_part;
-    bool isValid;
 };
 
 struct End {
@@ -126,8 +123,7 @@ class VariableDescriptionPacket : PacketCodec {
 
 class ValuePacket : PacketCodec {
     public:
-        uint8_t* encode(Value packetToEncode);
-        uint8_t* encode(ComplexValue packetToEncode);
+        uint8_t* encode(ComplexValue packetToEncode, bool isCmplex);
         ComplexValue decode(uint8_t* buffer, size_t size);
         uint8_t getSize();
     private:

@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include "codecs/codec.hpp"
 #include "storage/variables.h"
+#include "storage/matrices.h"
 
 // Serial2
 #define PIN_SERIAL2_RX       (20ul) // PA31
@@ -81,16 +82,27 @@ class CFXSerial {
         size_t size;
         PacketType packet_type;
         VariableStorage variable_memory;
+        MatrixStorage matrix_memory;
+
+        bool debugMode;
         
     private:
         States current_state;
         void sendByte(uint8_t);
         void sendBuffer(uint8_t* buffer, size_t size);
+        void debug_buffer(uint8_t* buffer, size_t size, bool is_sending);
         bool wait_for_ack();
         bool go_to_idle_state();
 
         Request data_request;
         VariableDescription variable_description;
+
+        RequestDataType request_type;
+        char variableName;
+        long data_items_to_send;
+
+        bool send_variable();
+        bool send_matrix();
 };
 
 void setUpSerialPort(void);
