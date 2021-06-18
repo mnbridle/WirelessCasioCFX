@@ -15,6 +15,7 @@ class VariableStorage
         VariableStorage();
         bool init(char variableName, bool isComplex);
         void set(char variableName, ComplexValue value);
+        void clear(char variableName);
         VariableData get(char variableName);
 
     private:

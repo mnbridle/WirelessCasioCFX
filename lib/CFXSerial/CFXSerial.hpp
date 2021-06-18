@@ -78,7 +78,7 @@ class CFXSerial {
         bool state_RECEIVE_SCREENSHOT_DATA();
         bool state_RECEIVE_END_PACKET();
 
-        void cfx_software_interface(void);
+        void cfx_software_interface(unsigned long run_time);
 
         uint8_t buffer[1024];
         size_t size;

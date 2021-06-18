@@ -40,6 +40,11 @@ void VariableStorage::set(char variableName, ComplexValue value)
     storage[variableName].data = value;
 }
 
+void VariableStorage::clear(char variableName)
+{
+    storage.erase(variableName);
+}
+
 bool VariableStorage::is_initialised(char variableName)
 {
     return (storage.find(variableName) != storage.end());

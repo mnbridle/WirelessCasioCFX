@@ -32,10 +32,11 @@ CFXSerial::~CFXSerial(void)
 {
 }
 
-void CFXSerial::cfx_software_interface(void)
+void CFXSerial::cfx_software_interface(unsigned long run_time)
 {
+  unsigned long start_time = millis();
+
   Serial.begin(9600, SERIAL_8N2);
-  
   while(1)
   {
     if (Serial.available())
@@ -45,6 +46,11 @@ void CFXSerial::cfx_software_interface(void)
     if (Serial2.available())
     {
       Serial.write(Serial2.read());
+    }
+    
+    if (millis() - start_time > (run_time*1000)) 
+    {
+      break;
     }
   }
 }

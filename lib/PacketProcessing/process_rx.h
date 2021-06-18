@@ -6,3 +6,6 @@
 #include <codecs/codec.hpp>
 
 void main_processor(CFXSerial &cfxSerial);
+void checkForDebugModeRequest(CFXSerial &cfxSerial);
+void changeLEDColour(CFXSerial &cfxSerial);
+void getRadioModuleStatus(CFXSerial &cfxSerial);
