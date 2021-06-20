@@ -5,6 +5,7 @@
 #include <LEDHelpers.hpp>
 #include <codecs/codec.hpp>
 
+int freeMemory(void);
 void main_processor(CFXSerial &cfxSerial);
 void checkForDebugModeRequest(CFXSerial &cfxSerial);
 void changeLEDColour(CFXSerial &cfxSerial);

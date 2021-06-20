@@ -19,6 +19,13 @@ class MatrixStorage
         bool init(char variableName, uint8_t rows, uint8_t cols, bool isComplex);
         bool append(char variableName, ComplexValue value);
         bool clear(char variableName);
+        
+        bool is_valid(char variableName);
+        bool is_complex(char variableName);
+        uint8_t rows(char variableName);
+        uint8_t cols(char variableName);
+        size_t size(char variableName);
+
     private:
         bool is_initialised(char variableName);
         std::map<char, MatrixData> storage;

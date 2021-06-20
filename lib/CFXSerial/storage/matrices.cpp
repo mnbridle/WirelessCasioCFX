@@ -35,6 +35,7 @@ bool MatrixStorage::append(char variableName, ComplexValue value)
     else
     {
         storage[variableName].matrix_data.push_back(value);
+        storage[variableName].isValid = true;
         return true;
     }
 }
@@ -52,7 +53,60 @@ MatrixData MatrixStorage::get_all(char variableName)
         value.isValid = true;
     }
 
+    // Clear the memory after it's been read back
+    clear(variableName);
+
     return value;
+}
+
+bool MatrixStorage::is_valid(char variableName)
+{
+    if (!is_initialised(variableName))
+    {
+        return false;
+    }
+
+    return storage[variableName].isValid;
+}
+
+bool MatrixStorage::is_complex(char variableName)
+{
+    if (!is_initialised(variableName))
+    {
+        return false;
+    }
+
+    return storage[variableName].isComplex;    
+}
+
+uint8_t MatrixStorage::rows(char variableName)
+{
+    if (!is_initialised(variableName))
+    {
+        return 0;
+    }
+
+    return storage[variableName].rows;    
+}
+
+uint8_t MatrixStorage::cols(char variableName)
+{
+    if (!is_initialised(variableName))
+    {
+        return 0;
+    }
+
+    return storage[variableName].cols;    
+}
+
+size_t MatrixStorage::size(char variableName)
+{
+    if (!is_initialised(variableName))
+    {
+        return 0;
+    }
+
+    return storage[variableName].matrix_data.size();
 }
 
 bool MatrixStorage::is_initialised(char variableName)

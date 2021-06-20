@@ -1,19 +1,46 @@
 #include <process_rx.h>
 #include <RadioHelpers.hpp>
 
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+
+int freeMemory() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
+}
+
 void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
-    // TODO: Should state machine live inside CFXSerial or here?
+    unsigned long timer_executecurrentstate = millis();
+    unsigned long timer_memoryusage = millis();
+    bool succeeded = true;
 
     while(1) {
-        if(!cfxSerial.execute_current_state())
+        if(succeeded || millis() - timer_executecurrentstate > 100)
         {
-            delay(100);
+            succeeded = cfxSerial.execute_current_state();
+            getRadioModuleStatus(cfxSerial);
+            changeLEDColour(cfxSerial);
+            checkForDebugModeRequest(cfxSerial);
+            timer_executecurrentstate = millis();
         }
 
-        getRadioModuleStatus(cfxSerial);
-        changeLEDColour(cfxSerial);
-        checkForDebugModeRequest(cfxSerial);
+        if (millis() - timer_memoryusage > 60000)
+        {
+            Serial.print("Free memory: ");
+            Serial.println(freeMemory());
+            timer_memoryusage = millis();
+        }
     }
 }
 

@@ -24,7 +24,7 @@ void setUpSerialPort()
 
 CFXSerial::CFXSerial(void)
 {
-  debugMode = false;
+  debugMode = true;
   go_to_idle_state();
 }
 
@@ -315,7 +315,7 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
         if(debugMode)
         {
           Serial.print("Data in buffer: ");
-          Serial.println(matrix_memory.get_all(variable_description.variableName).matrix_data.size());
+          Serial.println(matrix_memory.size(variable_description.variableName));
         }
         return true;
       default:
@@ -453,16 +453,15 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   } 
   else if(packetToEncode.variableType == RequestDataType::MATRIX) 
   {
-    MatrixData requested_variable = matrix_memory.get_all(data_request.variableName);
-    if (!requested_variable.isValid)
+    if (!matrix_memory.is_valid(data_request.variableName))
     {
       go_to_idle_state();
       return false;
     }
     packetToEncode.variableInUse = true;
-    packetToEncode.isComplex = requested_variable.isComplex;
-    packetToEncode.row = requested_variable.rows;
-    packetToEncode.col = requested_variable.cols;
+    packetToEncode.isComplex = matrix_memory.is_complex(data_request.variableName);
+    packetToEncode.row = matrix_memory.rows(data_request.variableName);
+    packetToEncode.col = matrix_memory.cols(data_request.variableName);
   }
   else {
     Serial.println("Request currently unsupported!");
