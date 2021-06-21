@@ -1,3 +1,5 @@
+#pragma once
+
 #include <map>
 #include <vector>
 #include <codecs/codec.hpp>
@@ -18,6 +20,7 @@ class MatrixStorage
         MatrixData get_all(char variableName);
         bool init(char variableName, uint8_t rows, uint8_t cols, bool isComplex);
         bool append(char variableName, ComplexValue value);
+        bool append_matrix(char variableName, MatrixData matrix);
         bool clear(char variableName);
         
         bool is_valid(char variableName);

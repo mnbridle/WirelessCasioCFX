@@ -23,6 +23,7 @@ void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
     unsigned long timer_executecurrentstate = millis();
     unsigned long timer_memoryusage = millis();
+    unsigned long timer_messagecheck = millis();
     bool succeeded = true;
 
     while(1) {
@@ -40,6 +41,20 @@ void main_processor(CFXSerial &cfxSerial) {
             Serial.print("Free memory: ");
             Serial.println(freeMemory());
             timer_memoryusage = millis();
+        }
+
+        if (millis() - timer_messagecheck > 60000)
+        {
+          // See if message has been sent
+          if (cfxSerial.matrix_memory.is_valid('A'))
+          {
+            Serial.println("Message in queue!");
+            // Do something with the message!
+            cfxSerial.message_storage.process_sent_message(cfxSerial.matrix_memory.get_all('A'));
+          } else {
+            Serial.println("No message");
+          }
+          timer_messagecheck = millis();
         }
     }
 }

@@ -7,6 +7,7 @@
 #include "codecs/codec.hpp"
 #include "storage/variables.h"
 #include "storage/matrices.h"
+#include "storage/messages.h"
 
 // Serial2
 #define PIN_SERIAL2_RX       (20ul) // PA31
@@ -87,6 +88,7 @@ class CFXSerial {
         PacketType packet_type;
         VariableStorage variable_memory;
         MatrixStorage matrix_memory;
+        MessageStorage message_storage;
 
         bool debugMode;
         
