@@ -25,11 +25,15 @@ void setUpSerialPort()
 CFXSerial::CFXSerial(void)
 {
   debugMode = true;
-  go_to_idle_state();
 }
 
 CFXSerial::~CFXSerial(void)
 {
+}
+
+void CFXSerial::init(void)
+{
+  go_to_idle_state("State machine initialised");
 }
 
 void CFXSerial::cfx_software_interface(unsigned long run_time)
@@ -173,7 +177,7 @@ void CFXSerial::sendDataAck()
 bool CFXSerial::execute_current_state() {
   bool isSuccessful = false;
 
-  if(debugMode)
+  if(debugMode && (uint8_t)current_state != 0)
   {
     Serial.print("Current state: ");
     Serial.println((uint8_t)current_state);
@@ -259,8 +263,7 @@ bool CFXSerial::state_IDLE()
 
 bool CFXSerial::state_RECEIVE_SCREENSHOT_DATA()
 {
-  Serial.println("Not implemented");
-  go_to_idle_state();
+  go_to_idle_state("receive_screenshot_data() not implemented");
   return false;
 }
 
@@ -270,17 +273,17 @@ bool CFXSerial::state_RECEIVE_END_PACKET()
   packetReceived = receivePacket();
   if(!packetReceived)
   {
-    go_to_idle_state();
+    go_to_idle_state("Packet not received");
     return false;
   }
 
   if(packet_type == PacketType::END)
   {
-    go_to_idle_state();
+    go_to_idle_state("End packet RXed");
     return true;
   }
 
-  go_to_idle_state();
+  go_to_idle_state("");
   return false;
 }
 
@@ -292,7 +295,7 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
 
   if(!packetReceived)
   {
-    go_to_idle_state();
+    go_to_idle_state("Packet not received");
     return false;
   }
 
@@ -319,18 +322,14 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
         }
         return true;
       default:
-        Serial.println("Currently unsupported");
-        Serial.print("Data type: ");
-        Serial.println((uint8_t)variable_description.variableType);
-        go_to_idle_state();
+        go_to_idle_state("Unsupported data type");
         return false;
     }
   }
 
   if(packet_type == PacketType::END)
   {
-    Serial.println("Received END, going to idle");
-    go_to_idle_state();
+    go_to_idle_state("Received END, going to idle");
     return true;
   } 
 }
@@ -339,7 +338,7 @@ bool CFXSerial::state_SEND_END_PACKET()
 {
   End packetToEncode;
   sendBuffer(EndPacket().encode(packetToEncode), 50);
-  go_to_idle_state();
+  go_to_idle_state("END packet sent");
   return true;
 }
 
@@ -358,7 +357,7 @@ bool CFXSerial::state_SEND_VALUE_PACKET()
 
   if(!succeeded)
   {
-    go_to_idle_state();
+    go_to_idle_state("Failed to send value packet");
     return false;
   }
 
@@ -455,8 +454,23 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   {
     if (!matrix_memory.is_valid(data_request.variableName))
     {
-      go_to_idle_state();
-      return false;
+      // Initialise an "empty" matrix to complete the transaction
+      ComplexValue value;
+      value.row = 1;
+      value.col = 1;
+      value.real_part = 0;
+      value.imag_part = 0;
+
+      matrix_memory.init(data_request.variableName, 1, 1, false);
+      matrix_memory.append(data_request.variableName, value);
+
+      if(debugMode)
+      {
+        Serial.println("Creating empty matrix to send, to complete the transaction");
+      }
+
+      // go_to_idle_state("Requested matrix memory is invalid");
+      // return false;
     }
     packetToEncode.variableInUse = true;
     packetToEncode.isComplex = matrix_memory.is_complex(data_request.variableName);
@@ -464,8 +478,7 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
     packetToEncode.col = matrix_memory.cols(data_request.variableName);
   }
   else {
-    Serial.println("Request currently unsupported!");
-    go_to_idle_state();
+    go_to_idle_state("Request currently unsupported!");
     return false;
   }
 
@@ -491,7 +504,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
   packetReceived = receivePacket();
   if(!packetReceived)
   {
-    go_to_idle_state();
+    go_to_idle_state("Data request not received in time");
     return false;
   }
 
@@ -502,7 +515,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
     data_request = RequestPacket().decode(buffer, size);
     if(!data_request.isValid)
     {
-      go_to_idle_state();
+      go_to_idle_state("Data request is invalid");
       return false;
     }
 
@@ -510,7 +523,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
 
     if(!wait_for_ack())
     {
-      go_to_idle_state();
+      go_to_idle_state("Data ack not acked");
       return false;
     }
 
@@ -523,7 +536,7 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
     VariableDescription decodedPacket = VariableDescriptionPacket().decode(buffer, size);
     if(!decodedPacket.isValid)
     {
-      go_to_idle_state();
+      go_to_idle_state("Variable description packet not valid");
       return false;
     }
 
@@ -578,14 +591,13 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
   Serial.print("Packet type invalid - ");
   Serial.println((uint8_t)packet_type);
 
-  go_to_idle_state();
+  go_to_idle_state("Received packet type invalid");
   return false;
 }
 
 bool CFXSerial::state_WAIT_FOR_SCREENSHOT_REQUEST()
 {
-  Serial.println("Not implemented");
-  go_to_idle_state();
+  go_to_idle_state("WAIT_FOR_SCREENSHOT_REQUEST() not implemented");
   return false;
 }
 
@@ -596,29 +608,34 @@ bool CFXSerial::wait_for_ack()
   packetReceived = receivePacket();
   if(!packetReceived)
   {
-    go_to_idle_state();
+    go_to_idle_state("ACK not received");
     return false;
   }
 
   // Return false if not an ack
   if(packet_type != PacketType::ACK)
   {
-    go_to_idle_state();
+    go_to_idle_state("Wrong ACK received");
     return false;
   }
 
   Ack decodedPacket = AckPacket().decode(buffer, size);
   if(!decodedPacket.isValid)
   {
-    go_to_idle_state();
+    go_to_idle_state("ACK not valid");
     return false;
   }
 
   return true;
 }
 
-bool CFXSerial::go_to_idle_state()
+bool CFXSerial::go_to_idle_state(const std::string& reason)
 {
   current_state = States::IDLE;
+  if(debugMode)
+  {
+    Serial.print("Going to idle, reason: ");
+    Serial.println(reason.c_str());
+  }
   return true;
 }

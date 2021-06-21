@@ -68,6 +68,8 @@ class CFXSerial {
 
         bool execute_current_state();
 
+        void init();
+        
         bool state_IDLE();
         bool state_WAIT_FOR_DATA_REQUEST();
         bool state_SEND_VARIABLE_DESCRIPTION_PACKET();
@@ -94,6 +96,7 @@ class CFXSerial {
         void sendBuffer(uint8_t* buffer, size_t size);
         void debug_buffer(uint8_t* buffer, size_t size, bool is_sending);
         bool wait_for_ack();
+        bool go_to_idle_state(const std::string& reason);
         bool go_to_idle_state();
 
         Request data_request;

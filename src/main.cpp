@@ -15,6 +15,8 @@ void setup() {
   // Set up serial port
   Serial.begin(9600, SERIAL_8N2);
   setUpSerialPort();
+
+  cfxSerial.init();
   
   // Serial.println("Setting up radio");
   // Set up radio
