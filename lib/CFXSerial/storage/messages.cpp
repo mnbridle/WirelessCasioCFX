@@ -74,7 +74,7 @@ const std::map<char, unsigned short>& MessageStorage::ascii_to_scancode()
         {'@', 369},
         {'#', 359},
         {'$', 349},
-        {'÷', 339},
+        {0xF6, 339}, // division symbol
         {'^', 329},
         {'&', 479},
         {'*', 469},
@@ -177,7 +177,7 @@ const std::map<unsigned short, char>& MessageStorage::scancode_to_ascii()
         {369, '@'},
         {359, '#'},
         {349, '$'},
-        {339, '÷'},
+        {339, 0xF6}, // division symbol
         {329, '^'},
         {479, '&'},
         {469, '*'},
