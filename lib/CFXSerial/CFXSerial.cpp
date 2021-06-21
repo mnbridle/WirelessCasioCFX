@@ -468,9 +468,6 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
       {
         Serial.println("Creating empty matrix to send, to complete the transaction");
       }
-
-      // go_to_idle_state("Requested matrix memory is invalid");
-      // return false;
     }
     packetToEncode.variableInUse = true;
     packetToEncode.isComplex = matrix_memory.is_complex(data_request.variableName);
