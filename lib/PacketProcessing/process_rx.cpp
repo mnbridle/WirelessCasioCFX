@@ -27,7 +27,7 @@ void main_processor(CFXSerial &cfxSerial) {
     bool succeeded = true;
 
     while(1) {
-        if(succeeded || millis() - timer_executecurrentstate > 100)
+        if (succeeded || millis() - timer_executecurrentstate > 100)
         {
             succeeded = cfxSerial.execute_current_state();
             getRadioModuleStatus(cfxSerial);
@@ -43,19 +43,13 @@ void main_processor(CFXSerial &cfxSerial) {
             timer_memoryusage = millis();
         }
 
-        if (millis() - timer_messagecheck > 60000)
+        // See if message has been sent
+        if (cfxSerial.matrix_memory.is_valid('A') && cfxSerial.matrix_memory.wasReceivedFromCFX('A'))
         {
-          // See if message has been sent
-          if (cfxSerial.matrix_memory.is_valid('A'))
-          {
-            Serial.println("Message in queue!");
-            // Do something with the message!
-            cfxSerial.message_storage.process_sent_message(cfxSerial.matrix_memory.get_all('A'));
-          } else {
-            Serial.println("No message");
-          }
-          timer_messagecheck = millis();
-        }
+          Serial.println("Message in queue!");
+          // Do something with the message!
+          cfxSerial.message_storage.process_sent_message(cfxSerial.matrix_memory.get_all('A'));
+        } 
     }
 }
 

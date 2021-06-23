@@ -348,11 +348,18 @@ bool CFXSerial::state_SEND_VALUE_PACKET()
   
   if(request_type == RequestDataType::VARIABLE)
   {
+    Serial.println("Sending variable");
     succeeded = send_variable();
   }
   else if(request_type == RequestDataType::MATRIX)
   {
+    Serial.println("Sending matrix");
     succeeded = send_matrix();
+  }
+  else
+  {
+    go_to_idle_state("Unknown request type!");
+    return false;
   }
 
   if(!succeeded)
@@ -435,6 +442,8 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   packetToEncode.variableType = data_request.variableType;
   packetToEncode.variableName = data_request.variableName;
 
+  request_type = packetToEncode.variableType;
+
   if(packetToEncode.variableType == RequestDataType::VARIABLE)
   {
     // Get variable from storage
@@ -461,18 +470,22 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
       value.real_part = 0;
       value.imag_part = 0;
 
-      matrix_memory.init(data_request.variableName, 1, 1, false);
-      matrix_memory.append(data_request.variableName, value);
-
       if(debugMode)
       {
         Serial.println("Creating empty matrix to send, to complete the transaction");
       }
+
+      matrix_memory.init(data_request.variableName, 1, 1, false);
+      matrix_memory.receivedFromCFX(data_request.variableName, false);
+      matrix_memory.append(data_request.variableName, value);
     }
     packetToEncode.variableInUse = true;
     packetToEncode.isComplex = matrix_memory.is_complex(data_request.variableName);
     packetToEncode.row = matrix_memory.rows(data_request.variableName);
     packetToEncode.col = matrix_memory.cols(data_request.variableName);
+
+    Serial.println("Data item is valid: ");
+    Serial.println(matrix_memory.is_valid(data_request.variableName));
   }
   else {
     go_to_idle_state("Request currently unsupported!");
@@ -545,6 +558,8 @@ bool CFXSerial::state_WAIT_FOR_DATA_REQUEST()
     if(decodedPacket.variableType == RequestDataType::MATRIX)
     {
       matrix_memory.init(decodedPacket.variableName, decodedPacket.row, decodedPacket.col, decodedPacket.isComplex);
+      matrix_memory.receivedFromCFX(decodedPacket.variableName, true);
+
       if(debugMode)
       {
         Serial.print("Matrix ");

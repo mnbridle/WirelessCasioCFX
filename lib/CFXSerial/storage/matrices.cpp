@@ -21,8 +21,36 @@ bool MatrixStorage::init(char variableName, uint8_t rows, uint8_t cols, bool isC
     matrix_data.rows = rows;
     matrix_data.cols = cols;
     matrix_data.isComplex = isComplex;
+    matrix_data.isValid = false;
+    matrix_data.receivedFromCFX = false;
+
     storage[variableName] = matrix_data;
 
+    return true;
+}
+
+bool MatrixStorage::wasReceivedFromCFX(char variableName)
+{
+    if (!is_initialised(variableName))
+    {
+        return false;
+    }
+
+    return storage[variableName].receivedFromCFX;
+}
+
+bool MatrixStorage::receivedFromCFX(char variableName, bool receivedFromCFX)
+{
+    if (!is_initialised(variableName))
+    {
+        return false;
+    }
+
+    Serial.print("Matrix ");
+    Serial.print(variableName);
+    Serial.print("sent from CFX: ");
+    Serial.println(receivedFromCFX);
+    storage[variableName].receivedFromCFX = receivedFromCFX;
     return true;
 }
 
@@ -32,25 +60,31 @@ bool MatrixStorage::append(char variableName, ComplexValue value)
     {
         return false;
     }
-    else
+
+    storage[variableName].matrix_data.push_back(value);
+    if (size(variableName) == rows(variableName) * cols(variableName))
     {
-        storage[variableName].matrix_data.push_back(value);
+        Serial.print("Gone valid, dimensions: ");
+        Serial.print(rows(variableName));
+        Serial.print(", cols: ");
+        Serial.print(cols(variableName));
+        Serial.print(", size: ");
+        Serial.println(size(variableName));
         storage[variableName].isValid = true;
-        return true;
+    } else {
+        Serial.println("Making it invalid");
+        storage[variableName].isValid = false;
     }
+    return true;
 }
 
 
 MatrixData MatrixStorage::get_all(char variableName)
 {
     MatrixData value;
-    if (!is_initialised(variableName))
+    if (is_initialised(variableName))
     {
-        value.isValid = false;
-    }
-    else {
         value = storage[variableName];
-        value.isValid = true;
     }
 
     // Clear the memory after it's been read back
@@ -76,6 +110,11 @@ bool MatrixStorage::is_complex(char variableName)
         return false;
     }
 
+    Serial.print("Mat ");
+    Serial.print(variableName);
+    Serial.print(" is complex: ");
+    Serial.println(storage[variableName].isComplex);
+    
     return storage[variableName].isComplex;    
 }
 
