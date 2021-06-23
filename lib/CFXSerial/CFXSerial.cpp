@@ -64,7 +64,6 @@ bool CFXSerial::receivePacket()
   // Receive entire packet
   unsigned long serialTimer = millis();
   unsigned long timeoutDuration = 100;
-  unsigned long start = millis();
 
   size_t i = 0;
 
@@ -332,6 +331,9 @@ bool CFXSerial::state_RECEIVE_VALUE_PACKET()
     go_to_idle_state("Received END, going to idle");
     return true;
   } 
+
+  go_to_idle_state("Unknown error, going to idle");
+  return false;
 }
 
 bool CFXSerial::state_SEND_END_PACKET()
@@ -435,7 +437,6 @@ bool CFXSerial::send_matrix()
 
 bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
 {
-  bool packetReceived = false;
   VariableDescription packetToEncode;
 
   // Copy bits from data request to packetToEncode
