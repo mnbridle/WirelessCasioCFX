@@ -1,54 +1,40 @@
 #include <process_rx.h>
 #include <RadioHelpers.hpp>
 
-#ifdef __arm__
-// should use uinstd.h to define sbrk but Due causes a conflict
-extern "C" char* sbrk(int incr);
-#else  // __ARM__
-extern char *__brkval;
-#endif  // __arm__
-
-int freeMemory() {
-  char top;
-#ifdef __arm__
-  return &top - reinterpret_cast<char*>(sbrk(0));
-#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
-  return &top - __brkval;
-#else  // __arm__
-  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
-#endif  // __arm__
-}
-
 void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
     unsigned long timer_executecurrentstate = millis();
     unsigned long timer_memoryusage = millis();
-    unsigned long timer_messagecheck = millis();
+    unsigned long timer_receivemessage_test = millis();
     bool succeeded = true;
+
+    // Force message into queue
+    generate_message_list(cfxSerial);
+
+    timer_receivemessage_test = millis();
 
     while(1) {
         if (succeeded || millis() - timer_executecurrentstate > 100)
         {
-            succeeded = cfxSerial.execute_current_state();
-            getRadioModuleStatus(cfxSerial);
-            changeLEDColour(cfxSerial);
-            checkForDebugModeRequest(cfxSerial);
-            timer_executecurrentstate = millis();
+          succeeded = cfxSerial.execute_current_state();
+          getRadioModuleStatus(cfxSerial);
+          changeLEDColour(cfxSerial);
+          checkForDebugModeRequest(cfxSerial);
+          timer_executecurrentstate = millis();
         }
 
         if (millis() - timer_memoryusage > 60000)
         {
-            Serial.print("Free memory: ");
-            Serial.println(freeMemory());
-            timer_memoryusage = millis();
+          Serial.print("Free memory: ");
+          Serial.println(cfxSerial.freeMemory());
+          timer_memoryusage = millis();
         }
 
-        // See if message has been sent
+        // See if CFX has sent a message to the ARM
         if (cfxSerial.matrix_memory.is_valid('A') && cfxSerial.matrix_memory.wasReceivedFromCFX('A'))
         {
-          Serial.println("Message in queue!");
-          // Do something with the message!
-          cfxSerial.message_storage.process_sent_message(cfxSerial.matrix_memory.get_all('A'));
+          Serial.println("Datagram received");
+          process_datagram(cfxSerial);
         } 
     }
 }
@@ -75,7 +61,8 @@ void changeLEDColour(CFXSerial &cfxSerial)
     setLEDState((long)led_colour);
 }
 
-void checkForDebugModeRequest(CFXSerial &cfxSerial) {
+void checkForDebugModeRequest(CFXSerial &cfxSerial) 
+{
     // Should we go into debug mode?
     VariableData variable_data;
     unsigned long debug_mode_time = 0;
@@ -90,4 +77,72 @@ void checkForDebugModeRequest(CFXSerial &cfxSerial) {
         setLEDState(GREEN);
         cfxSerial.variable_memory.clear('D');
     }
+}
+
+bool process_datagram(CFXSerial &cfxSerial)
+{
+  // Do something with the message!
+  MatrixData raw_datagram = cfxSerial.matrix_memory.get_all('A');
+  DatagramType datagram_type = cfxSerial.message_storage.message_type(raw_datagram);
+
+  MatrixData message_to_send;
+
+  switch(datagram_type)
+  {
+    case DatagramType::TEXT_MESSAGE_TX :
+      Serial.println("Received text message to on-send, processing it");
+      cfxSerial.message_storage.process_sent_message(raw_datagram);
+      break;
+
+    case DatagramType::TEXT_MESSAGE_RX :
+      Serial.println("Text message requested!");
+      message_to_send = cfxSerial.message_storage.process_received_message();
+      Serial.print("Message generated.");
+      cfxSerial.matrix_memory.append_matrix('A', message_to_send);
+      Serial.println("Sent to matrix memory to be retrieved");
+      break;
+
+    case DatagramType::UNKNOWN :
+    default:
+      Serial.print("Unknown datagram received! Rejecting.");
+  }
+
+  return true;
+}
+
+void generate_message_list(CFXSerial &cfxSerial)
+{
+    Message message;
+
+    message.recipient = "MNBRIDLE";
+    message.sender = "EMAIL";
+    message.date = 24062021;
+    message.time = 222755;
+    message.message = "Hello world! This is a test message.";
+    message.length = 19 + message.message.length();
+    cfxSerial.message_storage.send_message_to_receive_queue(message);
+
+    message.recipient = "MNBRIDLE";
+    message.sender = "EMAIL";
+    message.date = 25062021;
+    message.time = 002630;
+    message.message = "Midnight messages are spoooooky, w000000000";
+    message.length = 19 + message.message.length();
+    cfxSerial.message_storage.send_message_to_receive_queue(message);
+
+    message.recipient = "MNBRIDLE";
+    message.sender = "MNBRIDLE";
+    message.date = 25062021;
+    message.time = 002730;
+    message.message = "It's rather cold and quiet at the moment.";
+    message.length = 19 + message.message.length();
+    cfxSerial.message_storage.send_message_to_receive_queue(message);
+
+    message.recipient = "MNBRIDLE";
+    message.sender = "EMAIL";
+    message.date = 25062021;
+    message.time = 002750;
+    message.message = "I'm tired & I want to go to bed.";
+    message.length = 19 + message.message.length();
+    cfxSerial.message_storage.send_message_to_receive_queue(message);
 }

@@ -221,7 +221,7 @@ const std::map<unsigned short, char>& MessageStorage::scancode_to_ascii()
 bool MessageStorage::process_sent_message(MatrixData sent_message)
 {
     Message message;
-    size_t length = sent_message.matrix_data.size();
+    message.length = sent_message.matrix_data.size();
 
     for(size_t i=1; i<9; i++)
     {
@@ -236,7 +236,7 @@ bool MessageStorage::process_sent_message(MatrixData sent_message)
     message.date = (unsigned int)sent_message.matrix_data.at(17).real_part;
     message.time = (unsigned int)sent_message.matrix_data.at(18).real_part;
 
-    for(size_t i=19; i<length; i++)
+    for(size_t i=19; i<message.length; i++)
     {
         message.message.push_back(convert_scancode_to_ascii(sent_message.matrix_data.at(i)));
     }
@@ -251,7 +251,7 @@ bool MessageStorage::process_sent_message(MatrixData sent_message)
     Serial.print(" at ");
     Serial.println(message.time);
     Serial.print("Length: ");
-    Serial.println(length);
+    Serial.println(message.length);
     Serial.print("Contents: ");
     Serial.println(message.message.c_str());
 
@@ -263,6 +263,91 @@ bool MessageStorage::process_sent_message(MatrixData sent_message)
 MatrixData MessageStorage::process_received_message()
 {
     MatrixData received_message;
+    Message message = receive_queue.front();
+    receive_queue.pop_front();
+
+    ComplexValue date;
+    ComplexValue time;
+    ComplexValue scancode;
+    
+    uint8_t offset = 0;
+
+    Serial.println("Message");
+    Serial.println(message.recipient.c_str());
+    Serial.println(message.sender.c_str());
+    Serial.println(message.length);
+    Serial.println(message.date);
+    Serial.println(message.time);
+    Serial.println(message.message.c_str());
+
+    // Now we have the message, turn it into scancodes
+    received_message.cols = (uint8_t)message.length;
+    received_message.rows = 1;
+
+    ComplexValue message_type;
+    message_type.real_part = 2;
+    message_type.row = 1;
+    message_type.col = 1;
+
+    received_message.matrix_data.push_back(message_type);
+
+    offset = 2;
+    for (uint8_t i=0; i<8; i++) 
+    {
+        if (i<message.sender.length())
+        {
+            scancode = convert_ascii_to_scancode(message.sender.at(i), 1, i+offset);
+        }
+        else
+        {
+            scancode.real_part = 0;
+            scancode.row = 1;
+            scancode.col = i+offset;
+        }
+
+        received_message.matrix_data.push_back(scancode);
+    }
+
+    offset = 10;
+    for (uint8_t i=0; i<8 && i<message.recipient.length(); i++) 
+    {
+        if (i<message.recipient.length())
+        {
+            scancode = convert_ascii_to_scancode(message.recipient.at(i), 1, i+offset);
+        }
+        else
+        {
+            scancode.real_part = 0;
+            scancode.row = 1;
+            scancode.col = i+offset;
+        }
+
+        received_message.matrix_data.push_back(scancode);
+    }
+
+    date.real_part = message.date;
+    date.col = 18;
+    date.row = 1;
+    time.real_part = message.time;
+    time.col = 19;
+    time.row = 1;
+
+    received_message.matrix_data.push_back(date);
+    received_message.matrix_data.push_back(time);
+
+    offset = 20;
+    for (uint8_t i=0; i<message.message.length(); i++)
+    {
+        Serial.println(message.message.at(i));
+        received_message.matrix_data.push_back(convert_ascii_to_scancode(message.message.at(i), 1, i+offset));
+    }
+
+    Serial.println("Setting bits");
+
+    received_message.isValid = true;
+    received_message.isComplex = false;
+    received_message.receivedFromCFX = false;
+
     return received_message;
 }
 
@@ -287,6 +372,23 @@ ComplexValue MessageStorage::convert_ascii_to_scancode(char ascii, uint8_t row, 
     scancode.real_part = (double)map[ascii];
     scancode.row = row;
     scancode.col = col;
-
     return scancode;
+}
+
+DatagramType MessageStorage::message_type(MatrixData message)
+{
+    // Message type lives in the first element of the matrix
+    if (message.matrix_data.size() < 1)
+    {
+        return DatagramType::UNKNOWN;
+    }
+
+    return static_cast<DatagramType>(message.matrix_data.at(0).real_part);
+}
+
+bool MessageStorage::send_message_to_receive_queue(Message message)
+{
+    Serial.println("Sending message to receive_queue");
+    receive_queue.push_back(message);
+    return true;
 }

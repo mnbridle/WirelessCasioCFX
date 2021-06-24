@@ -78,6 +78,14 @@ bool MatrixStorage::append(char variableName, ComplexValue value)
     return true;
 }
 
+bool MatrixStorage::append_matrix(char variableName, MatrixData matrix)
+{
+    Serial.println("Clear matrix A");
+    clear(variableName);
+    Serial.println("Copy in a matrix object into matrix A");
+    storage[variableName] = matrix;
+    return true;
+}
 
 MatrixData MatrixStorage::get_all(char variableName)
 {

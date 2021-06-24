@@ -29,6 +29,13 @@
 #define IMAGE_BYTES            'PC'
 #define SCREENSHOT_BYTES       'DW'
 
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+
 enum class Transitions {
 	RECEIVED_DATA_WAKE_UP,
 	RECEIVED_SCREENSHOT_WAKE_UP,
@@ -80,6 +87,8 @@ class CFXSerial {
         bool state_WAIT_FOR_SCREENSHOT_REQUEST();
         bool state_RECEIVE_SCREENSHOT_DATA();
         bool state_RECEIVE_END_PACKET();
+
+        int freeMemory();
 
         void cfx_software_interface(unsigned long run_time);
 

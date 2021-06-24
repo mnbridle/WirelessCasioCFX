@@ -3,6 +3,7 @@
 #include <RadioHelpers.hpp>
 #include <LEDHelpers.hpp>
 #include <process_rx.h>
+#include "main.h"
 
 CFXSerial cfxSerial;
 

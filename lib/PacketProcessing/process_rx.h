@@ -5,8 +5,9 @@
 #include <LEDHelpers.hpp>
 #include <codecs/codec.hpp>
 
-int freeMemory(void);
 void main_processor(CFXSerial &cfxSerial);
 void checkForDebugModeRequest(CFXSerial &cfxSerial);
 void changeLEDColour(CFXSerial &cfxSerial);
 void getRadioModuleStatus(CFXSerial &cfxSerial);
+bool process_datagram(CFXSerial &cfxSerial);
+void generate_message_list(CFXSerial &cfxSerial);
