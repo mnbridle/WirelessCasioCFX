@@ -1,0 +1,843 @@
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:256
+File Name:EMAIL
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'MSGSIZE
+128\->\theta
+\Lbl 1:\ClrText
+\Locate 1,1,"\aster\aster\aster CasioMail 1.0 \aster\aster\aster"
+\Locate 2,3,"1 - R\Read mail"
+\Locate 2,4,"2 - Write mail"
+\Locate 2,5,"3 - Settings..."
+\Locate 2,6,"4 - About..."
+\Locate 2,7,"Exit"
+\Lbl 0:\Getkey\->A
+A=0\=>\Goto0
+A=47\=>\GotoZ
+A=72\=>\Prog ".MSGREAD"
+A=62\=>\Prog ".MSGWRTE"
+A=52\=>\Prog ".EMLSETT"
+A=73\=>\Prog ".EMLABT"
+\Goto1
+\Lbl Z:\ClrText
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:188
+File Name:.EMLABT
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\ClrText
+\Locate 1,1,"\aster\aster\asterAbout CasioMail\aster\aster\aster"
+\Locate 1,2,"CasioMail V1.0.210625"
+\Locate 2,3,"(C)2021 M N Bridle"
+\Locate 2,4,"mnbridle@gmail.com"
+\Locate 2,5,"GNU-GPL v3.0"
+\Locate 1,7,"\aster\aster\aster Press any key \aster\aster\aster"
+\Lbl 0:\Getkey\->A
+A=0\=>\Goto0
+\Return
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:246
+File Name:.EMLSEND
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\ClrText
+\Locate 1,1,"Processing..."
+'FIND END OF MSG
+180401\->\Mat A[1,19]
+\For \theta\->A \To 1 \Step \(-)1
+\Mat A[1,A]\<>0\=>\Break
+\Next 
+{1,A}\->\Dim \Mat Z
+\For 1\->B \To A
+\Mat A[1,B]\->\Mat Z[1,B]
+\Next 
+\Mat Z\->\Mat A
+{1,1}\->\Dim \Mat Z
+\Locate 17,1,"\Done!"
+\Locate 1,2,"Sending..."
+\Send(\Mat A)
+\Locate 12,2,"\Done!"
+\Locate 1,3,"Message queued."
+\For 0\->A \To 50
+\Next 
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:153
+File Name:.EMLRECV
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->I
+\ClrText
+{1,1}\->\Dim \Mat A
+2\->\Mat A[1,1]
+\Send(\Mat A)
+\Locate 1,1,"R\Receiving..."
+\Receive(\Mat A)
+\Mat A[1,1]\<>2\=>\Goto0
+\Locate 14,1,"\Done!"
+\For 0\->A \To 100
+\Next 
+\Return
+\Lbl 0:\Locate 1,2,"Msg ERROR"
+\For 0\->A \To 100
+\Next 
+1\->I
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:170
+File Name:.MSGINIT
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\ClrText
+'MSG REQUEST
+1\->\Mat A[1,1]
+\Locate 1,1,"R\Recipient:"
+\Locate 1,2,"[        ]"
+2\->M
+2\->N
+8\->L
+1\->Z
+\Prog ".TXTFWRI"
+\For 0\->A \To 50
+\Next 
+\Locate 1,3,"Sender:"
+\Locate 1,4,"[        ]"
+2\->M
+4\->N
+Z+L\->Z
+\Prog ".TXTFWRI"
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:437
+File Name:.MSGWRTE
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->\r
+{1,\theta}\->\Dim \Mat A
+\Prog ".MSGINIT"
+20\->W
+0\->S
+\Prog ".MSGWINI"
+1\->M~N
+\Lbl 1:\While W<\theta
+\Lbl 0:\Getkey\->C
+C=0\=>\Goto0
+C=31\=>\r=0\=>\Prog ".MSGNWLN"
+C=47\=>\Prog ".EMLSEND"
+C=47\=>\Return
+C=44\=>\Prog ".MSGDCHR"
+C=44\=>\Locate 15,7,"   "
+C=44\=>\Locate 15,7,W-20
+C=44\=>\Goto0
+C=78\=>\Prog ".CHRSSTE"
+C=77\=>\Prog ".CHRASTE"
+C=77\ Or C=78\=>\Goto0
+M\->X
+N\->Y
+S=0\=>\Prog ".CHRUCAL"
+S=1\=>\Prog ".CHRLCAL"
+S=2\=>\Prog ".CHRNUMS"
+S\>=3\=>\Prog ".CHRSPEC"
+I=1\=>C\<>61\=>C\<>31\=>\Goto0
+\Prog ".CHRC2RW"
+R\->\Mat A[1,W]
+\Isz W
+\Locate 15,7,W-20
+\Prog ".CHRNPOS"
+I=1\=>\Prog ".MSGWINI"
+\WhileEnd
+W=\theta\=>\Locate 14,7,"!"
+W=\theta\=>1\->\r
+W=\theta\=>M\>=2\=>\Dsz M
+W=\theta\=>\Dsz W
+\Goto1
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:25
+File Name:.MSGNWLN
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->M
+\Isz N
+N>5\=>\Prog ".MSGWINI"
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:151
+File Name:.MSGWINI
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\ClrText
+\Locate 1,7,"[        ]"
+2\->M
+7\->N
+1\->Z
+8\->L
+\Prog ".TXTFSHW"
+\Locate 15,7,W-20
+\Locate 18,7,"\slash"
+\Locate 19,7,\theta-20
+1\->M~N
+S=0\=>\Locate 13,7,"A"
+S=1\=>\Locate 13,7,"\Ra"
+S=2\=>\Locate 13,7,"\Cnt"
+S\>=3\=>\Locate 13,7,S
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:81
+File Name:.MSGDCHR
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\If M\>=2\ And \r=0
+\Then \Dsz M:\Locate M,N," ":\Dsz W:\Locate 14,7," "
+\IfEnd
+\If \r=1
+\Then 0\->\r:\Locate M,N," ":\Locate 14,7," "
+\IfEnd
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:86
+File Name:.MSGRINI
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\ClrText
+1\->Z
+8\->L
+\Locate 1,7,"[        ]"
+2\->M
+7\->N
+\Prog ".TXTFSHW"
+12\->M
+7\->N
+19\->Z
+\Prog ".TXTFTIM"
+1\->M
+1\->N
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:306
+File Name:.MSGREAD
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\Prog ".EMLRECV"
+I=1\=>\Return
+\Prog ".MSGRINI"
+\Dim \Mat A\->\List 1
+\List 1[2]\->V
+1\->M~N
+20\->W
+\While W\<=V
+\Mat A[1,W]\->R
+\Prog ".CHRSPRW"
+M\->X
+N\->Y
+C=31\=>\Prog ".MSGNWLO"
+S=0\=>\Prog ".CHRUCAL"
+S=1\=>\Prog ".CHRLCAL"
+S=2\=>\Prog ".CHRNUMS"
+S\>=3\=>\Prog ".CHRSPEC"
+\Isz W
+\Prog ".CHRNPOS"
+I=1\=>\Prog ".MSGRHLT"
+\WhileEnd
+\Locate 19,7,"E\Cntd"
+\Lbl C:\Getkey\->A
+A=0\=>\GotoC
+A=47\ Or A=31\=>\Return
+\GotoC
+\Lbl A:\Locate 18,7,"M\ore"
+\Lbl B:\Getkey\->A
+A=0\=>\GotoB
+\Prog ".MSGRINI"
+\Goto0
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:25
+File Name:.MSGNWLO
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->M
+\Isz N
+N>5\=>\Prog ".MSGRHLT"
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:63
+File Name:.MSGRHLT
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'WAIT TO CONTINUE
+\Locate 18,7,"M\ore"
+\Lbl 0:\Getkey\->A
+A=0\=>\Goto0
+\Prog ".MSGRINI"
+\Return
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:608
+File Name:.CHRUCAL
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->I
+C=36\=>\Locate X,Y,"E"
+C=36\=>\Return
+C=33\=>\Locate X,Y,"T"
+C=33\=>\Return
+C=76\=>\Locate X,Y,"A"
+C=76\=>\Return
+C=54\=>\Locate X,Y,"O"
+C=54\=>\Return
+C=55\=>\Locate X,Y,"I"
+C=55\=>\Return
+C=64\=>\Locate X,Y,"N"
+C=64\=>\Return
+C=43\=>\Locate X,Y,"S"
+C=43\=>\Return
+C=65\=>\Locate X,Y,"H"
+C=65\=>\Return
+C=53\=>\Locate X,Y,"R"
+C=53\=>\Return
+C=46\=>\Locate X,Y,"D"
+C=46\=>\Return
+C=25\=>\Locate X,Y,"L"
+C=25\=>\Return
+C=56\=>\Locate X,Y,"C"
+C=56\=>\Return
+C=72\=>\Locate X,Y,"U"
+C=72\=>\Return
+C=74\=>\Locate X,Y,"M"
+C=74\=>\Return
+C=52\=>\Locate X,Y,"W"
+C=52\=>\Return
+C=26\=>\Locate X,Y,"F"
+C=26\=>\Return
+C=75\=>\Locate X,Y,"G"
+C=75\=>\Return
+C=32\=>\Locate X,Y,"Y"
+C=32\=>\Return
+C=73\=>\Locate X,Y,"P"
+C=73\=>\Return
+C=66\=>\Locate X,Y,"B"
+C=66\=>\Return
+C=62\=>\Locate X,Y,"V"
+C=62\=>\Return
+C=35\=>\Locate X,Y,"K"
+C=35\=>\Return
+C=45\=>\Locate X,Y,"J"
+C=45\=>\Return
+C=42\=>\Locate X,Y,"X"
+C=42\=>\Return
+C=63\=>\Locate X,Y,"Q"
+C=63\=>\Return
+C=71\=>\Locate X,Y,"Z"
+C=71\=>\Return
+1\->I
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:612
+File Name:.CHRLCAL
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->I
+C=36\=>\Locate X,Y,"e"
+C=36\=>\Return
+C=33\=>\Locate X,Y,"\@7FD3"
+C=33\=>\Return
+C=76\=>\Locate X,Y,"a"
+C=76\=>\Return
+C=54\=>\Locate X,Y,"o"
+C=54\=>\Return
+C=55\=>\Locate X,Y,"i"
+C=55\=>\Return
+C=64\=>\Locate X,Y,"\Cnt"
+C=64\=>\Return
+C=43\=>\Locate X,Y,"\@7FD4"
+C=43\=>\Return
+C=65\=>\Locate X,Y,"h"
+C=65\=>\Return
+C=53\=>\Locate X,Y,"r"
+C=53\=>\Return
+C=46\=>\Locate X,Y,"d"
+C=46\=>\Return
+C=25\=>\Locate X,Y,"l"
+C=25\=>\Return
+C=56\=>\Locate X,Y,"c"
+C=56\=>\Return
+C=72\=>\Locate X,Y,"u"
+C=72\=>\Return
+C=74\=>\Locate X,Y,"m"
+C=74\=>\Return
+C=52\=>\Locate X,Y,"w"
+C=52\=>\Return
+C=26\=>\Locate X,Y,"f"
+C=26\=>\Return
+C=75\=>\Locate X,Y,"g"
+C=75\=>\Return
+C=32\=>\Locate X,Y,"y"
+C=32\=>\Return
+C=73\=>\Locate X,Y,"\@7FD2"
+C=73\=>\Return
+C=66\=>\Locate X,Y,"b"
+C=66\=>\Return
+C=62\=>\Locate X,Y,"v"
+C=62\=>\Return
+C=35\=>\Locate X,Y,"k"
+C=35\=>\Return
+C=45\=>\Locate X,Y,"j"
+C=45\=>\Return
+C=42\=>\Locate X,Y,"x"
+C=42\=>\Return
+C=63\=>\Locate X,Y,"q"
+C=63\=>\Return
+C=71\=>\Locate X,Y,"\@7FD1"
+C=71\=>\Return
+1\->I
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:266
+File Name:.CHRNUMS
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->I
+C=74\=>\Locate X,Y,7
+C=74\=>\Return
+C=64\=>\Locate X,Y,8
+C=64\=>\Return
+C=54\=>\Locate X,Y,9
+C=54\=>\Return
+C=73\=>\Locate X,Y,4
+C=73\=>\Return
+C=63\=>\Locate X,Y,5
+C=63\=>\Return
+C=53\=>\Locate X,Y,6
+C=53\=>\Return
+C=72\=>\Locate X,Y,1
+C=72\=>\Return
+C=62\=>\Locate X,Y,2
+C=62\=>\Return
+C=52\=>\Locate X,Y,3
+C=52\=>\Return
+C=71\=>\Locate X,Y,0
+C=71\=>\Return
+C=61\=>\Locate X,Y,"."
+C=61\=>\Return
+C=41\=>\Locate X,Y,"\(-)"
+C=41\=>\Return
+1\->I
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:738
+File Name:.CHRSPEC
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->I
+S=3\=>\Goto2
+S=4\=>\Goto3
+S=5\=>\Goto4
+S=6\=>\Goto5
+S=7\=>\Goto6
+1\->I
+\Return
+\Lbl 2
+C=79\=>\Locate X,Y,"!"
+C=69\=>\Locate X,Y,"@"
+C=59\=>\Locate X,Y,"#"
+C=49\=>\Locate X,Y,"\@24"
+C=39\=>\Locate X,Y,"/"
+C=29\=>\Locate X,Y,"^"
+C=79\ Or C=69\ Or C=59\ Or C=49\ Or C=39\ Or C=29\=>\Return
+1\->I
+\Return
+\Lbl 3
+C=79\=>\Locate X,Y,"\@26"
+C=69\=>\Locate X,Y,"\aster"
+C=59\=>\Locate X,Y,"("
+C=49\=>\Locate X,Y,")"
+C=39\=>\Locate X,Y,"\@5F"
+C=29\=>\Locate X,Y,"+"
+C=79\ Or C=69\ Or C=59\ Or C=49\ Or C=39\ Or C=29\=>\Return
+1\->I
+\Return
+\Lbl 4
+C=79\=>\Locate X,Y,"-"
+C=69\=>\Locate X,Y,"="
+C=59\=>\Locate X,Y,"{"
+C=49\=>\Locate X,Y,"}"
+C=39\=>\Locate X,Y,"\->"
+C=29\=>\Locate X,Y,"\Pi"
+C=79\ Or C=69\ Or C=59\ Or C=49\ Or C=39\ Or C=29\=>\Return
+1\->I
+\Return
+\Lbl 5
+C=79\=>\Locate X,Y,"'"
+C=69\=>\Locate X,Y,";"
+C=59\=>\Locate X,Y,"<"
+C=49\=>\Locate X,Y,"="
+C=39\=>\Locate X,Y,">"
+C=29\=>\Locate X,Y,","
+C=79\ Or C=69\ Or C=59\ Or C=49\ Or C=39\ Or C=29\=>\Return
+1\->I
+\Return
+\Lbl 6
+C=79\=>\Locate X,Y,"\slash"
+C=69\=>\Locate X,Y,"~"
+C=59\=>\Locate X,Y,"<"
+C=49\=>\Locate X,Y,"="
+C=39\=>\Locate X,Y,">"
+C=29\=>\Locate X,Y,"?"
+C=79\ Or C=69\ Or C=59\ Or C=49\ Or C=39\ Or C=29\=>\Return
+1\->I
+\Return
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:41
+File Name:.CHRSPRW
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'SPLIT RAW
+\Int (R/100)\->S
+100*(\Frac (R/100))\->C
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:26
+File Name:.CHRC2RW
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'SHIFT+SCN2RAW
+100S+C\->R
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:112
+File Name:.CHRSSTE
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'SHIFT STATE
+S\>=7\=>\Goto0
+S<7\=>\Goto1
+\Return
+\Lbl 0:0\->S:\Goto2
+\Lbl 1:\Isz S
+\Lbl 2:S=0\=>\Locate 13,7,"A"
+S=1\=>\Locate 13,7,"\Ra"
+S=2\=>\Locate 13,7,"\Cnt"
+S\>=3\=>\Locate 13,7,S
+\Return
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:74
+File Name:.CHRASTE
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'ALPHA STATE
+S=0\=>\Goto0
+S\>=1\=>\Goto1
+\Return
+\Lbl 0:1\->S
+\Locate 13,7,"\Ra"
+\Return
+\Lbl 1:0\->S
+\Locate 13,7,"A"
+\Return
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:55
+File Name:.CHRNPOS
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+0\->I
+\If M<20
+\Then \Isz M:\Return
+\IfEnd
+\If M\>=20\ And N<5
+\Then 1\->M:\Isz N:\Return
+\IfEnd
+1\->I
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:161
+File Name:.TXTFWRI
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'WRITE TXTFLD
+'M,N POSOFF
+'Z ARRAYOFF
+'L FLDLEN
+\For 1\->A \To L
+\Lbl 0:\Getkey\->C
+C=0\=>\Goto0
+C=31\=>\Break
+C=44\=>A\>=2\=>\Dsz A
+C=44\=>\Locate M+A-1,Y," "
+C=44\=>\Goto0
+M+A-1\->X
+N\->Y
+\Prog ".CHRUCAL"
+C\->\Mat A[1,A+Z]
+\Next 
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:105
+File Name:.TXTFSHW
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'SHOW TXTFLD
+'M,N POSOFF
+'Z ARRAYOFF
+'L FLDLEN
+\For 1\->A \To L
+\Mat A[1,A+Z]\->C
+C=0\=>\Break
+M+A-1\->X
+N\->Y
+\Prog ".CHRUCAL"
+\Next 
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:171
+File Name:.TXTFTIM
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'SHOW TIME
+'M,N OFFSET Z
+\Int (\Mat A[1,Z]/10000)\->D
+D\<=9\=>\Prog ".TXTFTM0"
+D\>=10\=>\Prog ".TXTFTM1"
+M+2\->M
+\Locate M,N,":"
+\Int (\Int (\Frac (\Mat A[1,Z]/10000)*10000)/100)\->D
+M+1\->M
+D\<=9\=>\Prog ".TXTFTM0"
+D\>=10\=>\Prog ".TXTFTM1"
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:22
+File Name:.TXTFTM0
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\Locate M,N,"0"
+\Locate M+1,N,D
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:10
+File Name:.TXTFTM1
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+\Locate M,N,D
+%End
