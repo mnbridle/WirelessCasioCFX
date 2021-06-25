@@ -4,6 +4,7 @@
 #include <RadioHelpers.hpp>
 #include <LEDHelpers.hpp>
 #include <codecs/CasioCFX/CasioCFX.hpp>
+#include <codecs/datagrams/datagrams.hpp>
 
 void main_processor(CFXSerial &cfxSerial);
 void checkForDebugModeRequest(CFXSerial &cfxSerial);

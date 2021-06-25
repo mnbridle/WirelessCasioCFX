@@ -1,5 +1,4 @@
 #include <process_rx.h>
-#include <RadioHelpers.hpp>
 
 void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
