@@ -89,16 +89,12 @@ bool process_datagram(CFXSerial &cfxSerial)
   switch(datagram_type)
   {
     case DatagramType::TEXT_MESSAGE_TX :
-      Serial.println("Received text message to on-send, processing it");
       cfxSerial.message_storage.process_sent_message(raw_datagram);
       break;
 
     case DatagramType::TEXT_MESSAGE_RX :
-      Serial.println("Text message requested!");
       message_to_send = cfxSerial.message_storage.process_received_message();
-      Serial.print("Message generated.");
       cfxSerial.matrix_memory.append_matrix('A', message_to_send);
-      Serial.println("Sent to matrix memory to be retrieved");
       break;
 
     case DatagramType::UNKNOWN :

@@ -46,10 +46,6 @@ bool MatrixStorage::receivedFromCFX(char variableName, bool receivedFromCFX)
         return false;
     }
 
-    Serial.print("Matrix ");
-    Serial.print(variableName);
-    Serial.print("sent from CFX: ");
-    Serial.println(receivedFromCFX);
     storage[variableName].receivedFromCFX = receivedFromCFX;
     return true;
 }
@@ -62,27 +58,14 @@ bool MatrixStorage::append(char variableName, ComplexValue value)
     }
 
     storage[variableName].matrix_data.push_back(value);
-    if (size(variableName) == rows(variableName) * cols(variableName))
-    {
-        Serial.print("Gone valid, dimensions: ");
-        Serial.print(rows(variableName));
-        Serial.print(", cols: ");
-        Serial.print(cols(variableName));
-        Serial.print(", size: ");
-        Serial.println(size(variableName));
-        storage[variableName].isValid = true;
-    } else {
-        Serial.println("Making it invalid");
-        storage[variableName].isValid = false;
-    }
+    storage[variableName].isValid = size(variableName) == rows(variableName) * cols(variableName);
+
     return true;
 }
 
 bool MatrixStorage::append_matrix(char variableName, MatrixData matrix)
 {
-    Serial.println("Clear matrix A");
     clear(variableName);
-    Serial.println("Copy in a matrix object into matrix A");
     storage[variableName] = matrix;
     return true;
 }
@@ -117,11 +100,6 @@ bool MatrixStorage::is_complex(char variableName)
     {
         return false;
     }
-
-    Serial.print("Mat ");
-    Serial.print(variableName);
-    Serial.print(" is complex: ");
-    Serial.println(storage[variableName].isComplex);
     
     return storage[variableName].isComplex;    
 }
