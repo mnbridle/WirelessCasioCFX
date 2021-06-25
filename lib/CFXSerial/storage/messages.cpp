@@ -241,21 +241,9 @@ bool MessageStorage::process_sent_message(MatrixData sent_message)
         message.message.push_back(convert_scancode_to_ascii(sent_message.matrix_data.at(i)));
     }
 
-    Serial.println("Received message!");
-    Serial.print("From: ");
-    Serial.println(message.sender.c_str());
-    Serial.print("To: ");
-    Serial.println(message.recipient.c_str());
-    Serial.print("On ");
-    Serial.print(message.date);
-    Serial.print(" at ");
-    Serial.println(message.time);
-    Serial.print("Length: ");
-    Serial.println(message.length);
-    Serial.print("Contents: ");
-    Serial.println(message.message.c_str());
-
-    send_queue.push_back(message);
+    outbox.push_back(message);
+    // Send to inbox for debugging purposes
+    inbox.push_back(message);
 
     return true;
 }
@@ -263,22 +251,14 @@ bool MessageStorage::process_sent_message(MatrixData sent_message)
 MatrixData MessageStorage::process_received_message()
 {
     MatrixData received_message;
-    Message message = receive_queue.front();
-    receive_queue.pop_front();
+    Message message = inbox.front();
+    inbox.pop_front();
 
     ComplexValue date;
     ComplexValue time;
     ComplexValue scancode;
     
     uint8_t offset = 0;
-
-    Serial.println("Message");
-    Serial.println(message.recipient.c_str());
-    Serial.println(message.sender.c_str());
-    Serial.println(message.length);
-    Serial.println(message.date);
-    Serial.println(message.time);
-    Serial.println(message.message.c_str());
 
     // Now we have the message, turn it into scancodes
     received_message.cols = (uint8_t)message.length;
@@ -338,11 +318,8 @@ MatrixData MessageStorage::process_received_message()
     offset = 20;
     for (uint8_t i=0; i<message.message.length(); i++)
     {
-        Serial.println(message.message.at(i));
         received_message.matrix_data.push_back(convert_ascii_to_scancode(message.message.at(i), 1, i+offset));
     }
-
-    Serial.println("Setting bits");
 
     received_message.isValid = true;
     received_message.isComplex = false;
@@ -386,9 +363,16 @@ DatagramType MessageStorage::message_type(MatrixData message)
     return static_cast<DatagramType>(message.matrix_data.at(0).real_part);
 }
 
-bool MessageStorage::send_message_to_receive_queue(Message message)
+bool MessageStorage::send_message_to_outbox(Message message)
 {
-    Serial.println("Sending message to receive_queue");
-    receive_queue.push_back(message);
+    Serial.println("Sending message to outbox");
+    outbox.push_back(message);
+    return true;
+}
+
+bool MessageStorage::send_message_to_inbox(Message message)
+{
+    Serial.println("Sending message to inbox");
+    inbox.push_back(message);
     return true;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include <codecs/codec.hpp>
+#include <codecs/CasioCFX/CasioCFX.hpp>
 
 struct VariableData
 {

@@ -80,15 +80,8 @@ bool CFXSerial::receivePacket()
       delay(5);
     }
 
-    if(i==1 && !(buffer[0]==':'))
+    if ((i==1 && !(buffer[0]==':')) || i==50)
     {
-      // It's an acknowledgement or wakeup
-      break;
-    }
-
-    if(i==50)
-    {
-      // No more data!
       break;
     }
   }
@@ -100,7 +93,6 @@ bool CFXSerial::receivePacket()
     return false;
   }
 
-  // Store packet data in class
   // Determine packet type
   packet_type = PacketCodec().getPacketType(buffer, i);
   size = i;
@@ -119,7 +111,6 @@ void CFXSerial::sendByte(uint8_t txByte)
   buffer[0] = txByte;
 
   sendBuffer(buffer, 1);
-  // Serial2.write(txByte);
 }
 
 void CFXSerial::sendBuffer(uint8_t* buffer, size_t size)

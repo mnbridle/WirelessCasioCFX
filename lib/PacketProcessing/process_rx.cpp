@@ -120,7 +120,7 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 222755;
     message.message = "Hello world! This is a test message.";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_receive_queue(message);
+    cfxSerial.message_storage.send_message_to_inbox(message);
 
     message.recipient = "MNBRIDLE";
     message.sender = "EMAIL";
@@ -128,7 +128,7 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 002630;
     message.message = "Midnight messages are spoooooky, w000000000";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_receive_queue(message);
+    cfxSerial.message_storage.send_message_to_inbox(message);
 
     message.recipient = "MNBRIDLE";
     message.sender = "MNBRIDLE";
@@ -136,7 +136,7 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 002730;
     message.message = "It's rather cold and quiet at the moment.";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_receive_queue(message);
+    cfxSerial.message_storage.send_message_to_inbox(message);
 
     message.recipient = "MNBRIDLE";
     message.sender = "EMAIL";
@@ -144,5 +144,6 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 002750;
     message.message = "I'm tired & I want to go to bed.";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_receive_queue(message);
+    
+    cfxSerial.message_storage.send_message_to_inbox(message);
 }

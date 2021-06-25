@@ -3,7 +3,7 @@
 #include <CFXSerial.hpp>
 #include <RadioHelpers.hpp>
 #include <LEDHelpers.hpp>
-#include <codecs/codec.hpp>
+#include <codecs/CasioCFX/CasioCFX.hpp>
 
 void main_processor(CFXSerial &cfxSerial);
 void checkForDebugModeRequest(CFXSerial &cfxSerial);

@@ -1,4 +1,4 @@
-#include "codec.hpp"
+#include "CasioCFX.hpp"
 
 bool PacketCodec::checksumValid(uint8_t* buffer, size_t size) {
     uint8_t checksum = PacketCodec::calculateChecksum(buffer, size);

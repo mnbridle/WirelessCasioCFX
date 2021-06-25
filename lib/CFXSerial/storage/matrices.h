@@ -2,7 +2,7 @@
 
 #include <map>
 #include <vector>
-#include <codecs/codec.hpp>
+#include <codecs/CasioCFX/CasioCFX.hpp>
 
 struct MatrixData
 {

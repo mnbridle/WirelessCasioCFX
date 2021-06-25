@@ -4,7 +4,7 @@
 #include <string>
 #include <queue>
 #include <Arduino.h>
-#include "codecs/codec.hpp"
+#include "codecs/CasioCFX/CasioCFX.hpp"
 #include "storage/variables.h"
 #include "storage/matrices.h"
 #include "storage/messages.h"

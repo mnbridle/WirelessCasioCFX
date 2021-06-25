@@ -47,13 +47,14 @@ class MessageStorage
         MatrixData process_received_message(unsigned short index);
         bool process_sent_message(MatrixData sent_message);
 
-        bool send_message_to_receive_queue(Message message);
+        bool send_message_to_outbox(Message message);
+        bool send_message_to_inbox(Message message);
         
         DatagramType message_type(MatrixData message);
 
     private:
-        std::list<Message> send_queue;
-        std::list<Message> receive_queue;
+        std::list<Message> inbox;
+        std::list<Message> outbox;
         char convert_scancode_to_ascii(ComplexValue scancode);
         ComplexValue convert_ascii_to_scancode(char ascii, uint8_t row, uint8_t col);
         const std::map<char, unsigned short>& ascii_to_scancode(void);
