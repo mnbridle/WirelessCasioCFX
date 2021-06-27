@@ -376,3 +376,15 @@ bool MessageStorage::send_message_to_inbox(Message message)
     inbox.push_back(message);
     return true;
 }
+
+bool MessageStorage::outbox_empty()
+{
+    return outbox.empty();
+}
+
+Message MessageStorage::get_outbox_message()
+{
+    Message message = outbox.front();
+    outbox.pop_front();
+    return message;
+}

@@ -38,6 +38,9 @@ class MessageStorage
         
         DatagramType message_type(MatrixData message);
 
+        Message get_outbox_message();
+        bool outbox_empty();
+
     private:
         std::list<Message> inbox;
         std::list<Message> outbox;

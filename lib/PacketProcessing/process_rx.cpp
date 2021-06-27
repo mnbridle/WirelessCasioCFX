@@ -1,40 +1,106 @@
 #include <process_rx.h>
 
+RH_RF24 drf4463(DRF4463_nSEL, DRF4463_nIRQ, DRF4463_SDN);
+RHReliableDatagram manager(drf4463, CLIENT_ADDRESS);
+
+bool setupRadio() {
+    return drf4463.init();
+}
+
+void setModeRx() {
+    drf4463.setModeRx();
+}
+
+SystemStatus getRadioStatus() {
+  SystemStatus status = SystemStatus();
+
+  status.batteryVoltage.real_part = drf4463.get_battery_voltage();
+  status.radio_temperature.real_part = drf4463.get_temperature();
+  status.uptime.real_part = millis();
+  status.lastRssi.real_part = drf4463.lastRssi();
+
+  return status;
+}
+
 void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
     unsigned long timer_executecurrentstate = millis();
     unsigned long timer_memoryusage = millis();
-    unsigned long timer_receivemessage_test = millis();
+    unsigned long timer_sendrfmessage = millis();
+
     bool succeeded = true;
 
     // Force message into queue
     generate_message_list(cfxSerial);
 
-    timer_receivemessage_test = millis();
+    // Set up manager
+    if (!manager.init())
+    {
+      Serial.println("init failed!");
+    }
+
+    drf4463.setFrequency(433.920);
+    drf4463.setTxPower(0x05);
+
+    // Dont put this on the stack:
+    uint8_t buf[RH_RF24_MAX_MESSAGE_LEN];
 
     while(1) {
-        if (succeeded || millis() - timer_executecurrentstate > 100)
-        {
-          succeeded = cfxSerial.execute_current_state();
-          getRadioModuleStatus(cfxSerial);
-          changeLEDColour(cfxSerial);
-          checkForDebugModeRequest(cfxSerial);
-          timer_executecurrentstate = millis();
-        }
+      clearLED();
+      if (succeeded || timer_executecurrentstate + 100 < millis())
+      {
+        succeeded = cfxSerial.execute_current_state();
+        getRadioModuleStatus(cfxSerial);
+        changeLEDColour(cfxSerial);
+        checkForDebugModeRequest(cfxSerial);
+        timer_executecurrentstate = millis();
+      }
 
-        if (millis() - timer_memoryusage > 60000)
-        {
-          Serial.print("Free memory: ");
-          Serial.println(cfxSerial.freeMemory());
-          timer_memoryusage = millis();
-        }
+      if (timer_memoryusage + 60000 < millis())
+      {
+        Serial.print("Free memory: ");
+        Serial.println(cfxSerial.freeMemory());
+        timer_memoryusage = millis();
+      }
 
-        // See if CFX has sent a message to the ARM
-        if (cfxSerial.matrix_memory.is_valid('A') && cfxSerial.matrix_memory.wasReceivedFromCFX('A'))
-        {
-          Serial.println("Datagram received");
-          process_datagram(cfxSerial);
-        } 
+      // See if CFX has sent a message to the ARM
+      if (cfxSerial.matrix_memory.is_valid('A') && cfxSerial.matrix_memory.wasReceivedFromCFX('A'))
+      {
+        Serial.println("Datagram received");
+        process_datagram(cfxSerial);
+      } 
+
+      // See if there are any messages to send in Outbox
+      if( !cfxSerial.message_storage.outbox_empty() )
+      {
+          Serial.println("Outbox is not empty!");
+          Message message = cfxSerial.message_storage.get_outbox_message();
+          Serial.println("Contents:");
+          Serial.println(message.message.c_str());
+          setLEDState(RED);
+          manager.sendtoWait((uint8_t *)message.message.c_str(), message.message.length(), SERVER_ADDRESS);
+          setLEDState(YELLOW);
+
+          // Now wait for a reply from the server
+          uint8_t len = sizeof(buf);
+          uint8_t from;   
+          if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
+          {
+            setLEDState(GREEN);
+            Serial.print("got reply from : 0x");
+            Serial.print(from, HEX);
+            Serial.print(": ");
+            Serial.println((char*)buf);
+            Serial.print("Rx power: ");
+            Serial.print((uint8_t)drf4463.lastRssi());
+            Serial.println("dBm");
+          }
+          else
+          {
+            setLEDState(RED);
+            Serial.println("No reply, is rf24_reliable_datagram_server running?");
+          }
+      }
     }
 }
 
