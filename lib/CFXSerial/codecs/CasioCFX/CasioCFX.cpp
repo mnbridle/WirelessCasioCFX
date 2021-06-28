@@ -95,11 +95,11 @@ double PacketCodec::bcd2double(uint8_t* buffer, size_t size, size_t offset){
     for (int8_t i=7; i>=0; i--)
     {
         digits = ((buffer[i+offset] & 0xF0) >> 4) * 10 + (buffer[i+offset] & 0x0F);
-        value += digits * pow(10, 2*(7-i));
+        value += digits * pow(10, -14 + 2*(7-i));
     }
 
     // Put decimal point in the right place
-    value *= pow(10, -14);
+    // value *= pow(10, -14);
 
     if(partIsNegative)
     {

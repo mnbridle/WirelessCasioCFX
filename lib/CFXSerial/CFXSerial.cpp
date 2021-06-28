@@ -24,7 +24,7 @@ void setUpSerialPort()
 
 CFXSerial::CFXSerial(void)
 {
-  debugMode = false;
+  debugMode = true;
 }
 
 CFXSerial::~CFXSerial(void)
