@@ -70,7 +70,7 @@ struct End {
     bool isValid;
 };
 
-class PacketCodec {
+class CFXSerialCodec {
     public:
         bool checksumValid(uint8_t* buffer, size_t size);
         uint8_t calculateChecksum(uint8_t* buffer, size_t size);
@@ -81,7 +81,7 @@ class PacketCodec {
         PacketType getPacketType(uint8_t* buffer, size_t size);
 };
 
-class WakeUpPacket : PacketCodec {
+class WakeUpPacket : CFXSerialCodec {
     public:
         uint8_t* encode(WakeUpByte wakeUpType);
         WakeUp decode(uint8_t* buffer, size_t size);
@@ -91,7 +91,7 @@ class WakeUpPacket : PacketCodec {
         uint8_t encodedPacket[1];
 };
 
-class RequestPacket : PacketCodec {
+class RequestPacket : CFXSerialCodec {
     public:
         uint8_t* encode(char* variableType, char* variableName);
         Request decode(uint8_t* buffer, size_t size);
@@ -101,7 +101,7 @@ class RequestPacket : PacketCodec {
         uint8_t encodedPacket[50];
 };
 
-class AckPacket : PacketCodec {
+class AckPacket : CFXSerialCodec {
     public:
         uint8_t* encode();
         Ack decode(uint8_t* buffer, size_t size);
@@ -111,7 +111,7 @@ class AckPacket : PacketCodec {
         uint8_t encodedPacket[1];
 };
 
-class VariableDescriptionPacket : PacketCodec {
+class VariableDescriptionPacket : CFXSerialCodec {
     public:
         uint8_t* encode(VariableDescription packetToEncode);
         VariableDescription decode(uint8_t* buffer, size_t size);
@@ -121,7 +121,7 @@ class VariableDescriptionPacket : PacketCodec {
         uint8_t encodedPacket[50];
 };
 
-class ValuePacket : PacketCodec {
+class ValuePacket : CFXSerialCodec {
     public:
         uint8_t* encode(ComplexValue packetToEncode, bool isCmplex);
         ComplexValue decode(uint8_t* buffer, size_t size);
@@ -133,7 +133,7 @@ class ValuePacket : PacketCodec {
         uint8_t encodedPacket[26];
 };
 
-class EndPacket : PacketCodec {
+class EndPacket : CFXSerialCodec {
     public:
         uint8_t* encode(End packetToEncode);
         End decode(uint8_t* buffer, size_t size);

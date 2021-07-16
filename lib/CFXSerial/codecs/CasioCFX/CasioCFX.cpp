@@ -1,11 +1,11 @@
 #include "CasioCFX.hpp"
 
-bool PacketCodec::checksumValid(uint8_t* buffer, size_t size) {
-    uint8_t checksum = PacketCodec::calculateChecksum(buffer, size);
+bool CFXSerialCodec::checksumValid(uint8_t* buffer, size_t size) {
+    uint8_t checksum = CFXSerialCodec::calculateChecksum(buffer, size);
     return checksum == buffer[size-1];
 }
 
-uint8_t PacketCodec::calculateChecksum(uint8_t* buffer, size_t size) {
+uint8_t CFXSerialCodec::calculateChecksum(uint8_t* buffer, size_t size) {
     uint8_t checksum = 0x00;
     uint16_t sum_bytes = 0x0000;
 
@@ -19,7 +19,7 @@ uint8_t PacketCodec::calculateChecksum(uint8_t* buffer, size_t size) {
     return checksum;
 }
 
-bool PacketCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffer, size_t size, size_t offset) 
+bool CFXSerialCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffer, size_t size, size_t offset) 
 {
     bool partIsNegative, valueIsOneOrMore;
     float exponent;
@@ -81,7 +81,7 @@ bool PacketCodec::double2bcd(double value, bool hasImaginaryPart, uint8_t* buffe
     return true;
 }
 
-double PacketCodec::bcd2double(uint8_t* buffer, size_t size, size_t offset){
+double CFXSerialCodec::bcd2double(uint8_t* buffer, size_t size, size_t offset){
     double value = 0;
     uint8_t digits = 0;
     int8_t exponent = 0;
@@ -117,7 +117,7 @@ double PacketCodec::bcd2double(uint8_t* buffer, size_t size, size_t offset){
     return value;
 }
 
-PacketType PacketCodec::getPacketType(uint8_t* buffer, size_t size) {
+PacketType CFXSerialCodec::getPacketType(uint8_t* buffer, size_t size) {
     switch(size) {
         case 1:
             if(buffer[0] == 0x06)

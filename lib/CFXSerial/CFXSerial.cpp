@@ -24,7 +24,7 @@ void setUpSerialPort()
 
 CFXSerial::CFXSerial(void)
 {
-  debugMode = true;
+  debugMode = false;
 }
 
 CFXSerial::~CFXSerial(void)
@@ -94,7 +94,7 @@ bool CFXSerial::receivePacket()
   }
 
   // Determine packet type
-  packet_type = PacketCodec().getPacketType(buffer, i);
+  packet_type = CFXSerialCodec().getPacketType(buffer, i);
   size = i;
 
   if(debugMode)
