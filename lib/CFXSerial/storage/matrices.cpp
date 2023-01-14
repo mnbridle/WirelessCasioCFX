@@ -26,6 +26,9 @@ bool MatrixStorage::init(char variableName, uint8_t rows, uint8_t cols, bool isC
 
     storage[variableName] = matrix_data;
 
+    Serial.print("Successfully did an init for ");
+    Serial.println(variableName);
+
     return true;
 }
 
@@ -79,6 +82,8 @@ MatrixData MatrixStorage::get_all(char variableName)
     }
 
     // Clear the memory after it's been read back
+    Serial.print("Clearing mat ");
+    Serial.println(variableName);
     clear(variableName);
 
     return value;

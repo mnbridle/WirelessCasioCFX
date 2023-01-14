@@ -42,6 +42,7 @@ class MessageStorage
         Message get_outbox_message();
         std::string get_serialised_outbox_message();
 
+        bool inbox_empty();
         bool outbox_empty();
 
     private:
@@ -51,4 +52,6 @@ class MessageStorage
         ComplexValue convert_ascii_to_scancode(char ascii, uint8_t row, uint8_t col);
         const std::map<char, unsigned short>& ascii_to_scancode(void);
         const std::map<unsigned short, char>& scancode_to_ascii(void);
+
+        bool debug = false;
 };

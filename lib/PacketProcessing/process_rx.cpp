@@ -77,10 +77,16 @@ void main_processor(CFXSerial &cfxSerial) {
           setLEDState(GREEN);
       }
 
+      if ( !cfxSerial.message_storage.inbox_empty() )
+      {
+        Serial.println("Message ready to be received by the calculator");
+        process_datagram(cfxSerial);
+      }
+
       // Check to see if there's a message to be received
       if (drf4463.available())
       {
-        delay(1000);
+        delay(2000);
         // See if there's a message in the buffer
         if (drf4463.recv(buf, &len))
         {
@@ -122,7 +128,7 @@ void main_processor(CFXSerial &cfxSerial) {
           sender[j] = '\0';
           j=0;
 
-          while (i < 128) {
+          while (i < 128 && buf[i] != '\0') {
             message[j] = buf[i];
             i++;
             j++;
@@ -134,8 +140,12 @@ void main_processor(CFXSerial &cfxSerial) {
           received_message.recipient = std::string(recipient);
           received_message.sender = std::string(sender);
           received_message.message = std::string(message);
+          received_message.length = 19 + received_message.message.length();
 
           cfxSerial.message_storage.send_message_to_inbox(received_message);
+
+          // Clear memory
+          memset(buf, 0, RH_RF24_MAX_MESSAGE_LEN);
         }
         else
         {
@@ -187,26 +197,38 @@ void checkForDebugModeRequest(CFXSerial &cfxSerial)
 
 bool process_datagram(CFXSerial &cfxSerial)
 {
+  MatrixData message_to_send_to_cfx;
+
   // Do something with the message!
   MatrixData raw_datagram = cfxSerial.matrix_memory.get_all('A');
   DatagramType datagram_type = cfxSerial.message_storage.message_type(raw_datagram);
 
-  MatrixData message_to_send;
-
   switch(datagram_type)
   {
     case DatagramType::TEXT_MESSAGE_TX :
+      Serial.println("Text message has been sent");
       cfxSerial.message_storage.process_sent_message(raw_datagram);
-      break;
-
-    case DatagramType::TEXT_MESSAGE_RX :
-      message_to_send = cfxSerial.message_storage.process_received_message();
-      cfxSerial.matrix_memory.append_matrix('A', message_to_send);
-      break;
+      Serial.println("Done!");
+      return true;
 
     case DatagramType::UNKNOWN :
     default:
       Serial.print("Unknown datagram received! Rejecting.");
+  }
+
+  // Message in inbox?
+  if (!cfxSerial.message_storage.inbox_empty())
+  {
+      Serial.println("Text message has been received");
+      message_to_send_to_cfx = cfxSerial.message_storage.process_received_message();
+      
+      // Ensure that matrix is set to valid
+      message_to_send_to_cfx.isValid = true;
+
+      cfxSerial.matrix_memory.init('B', message_to_send_to_cfx.rows, message_to_send_to_cfx.cols, message_to_send_to_cfx.isComplex);
+      cfxSerial.matrix_memory.append_matrix('B', message_to_send_to_cfx);
+      Serial.println("Done!");
+      return true;
   }
 
   return true;

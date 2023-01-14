@@ -453,6 +453,12 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   } 
   else if(packetToEncode.variableType == RequestDataType::MATRIX) 
   {
+    Serial.print("We want a matrix: ");
+    Serial.println(data_request.variableName);
+    // Serial.println(matrix_memory.is_valid(data_request.variableName));
+    // Serial.println(matrix_memory.get_all(data_request.variableName).rows);
+    // Serial.println(matrix_memory.get_all(data_request.variableName).cols);
+
     if (!matrix_memory.is_valid(data_request.variableName))
     {
       // Initialise an "empty" matrix to complete the transaction
