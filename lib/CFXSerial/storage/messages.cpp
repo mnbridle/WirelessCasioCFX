@@ -343,13 +343,9 @@ MatrixData MessageStorage::process_received_message(unsigned short index)
 char MessageStorage::convert_scancode_to_ascii(ComplexValue value)
 {
     unsigned short scancode = (unsigned short)roundf(value.real_part);
-    Serial.print("Scancode to convert: ");
-    Serial.println(scancode);
 
     std::map<unsigned short, char> map = scancode_to_ascii();    
     char ascii = map[scancode];
-    Serial.print("Result: ");
-    Serial.println((unsigned int)ascii);
     return ascii;
 }
 
@@ -357,8 +353,6 @@ ComplexValue MessageStorage::convert_ascii_to_scancode(char ascii, uint8_t row, 
 {
     ComplexValue scancode;
     std::map<char, unsigned short> map = ascii_to_scancode();
-    Serial.print("ASCII to convert: ");
-    Serial.println(ascii);
 
     scancode.real_part = (double)map[ascii];
     scancode.row = row;
@@ -401,4 +395,13 @@ Message MessageStorage::get_outbox_message()
     Message message = outbox.front();
     outbox.pop_front();
     return message;
+}
+
+std::string MessageStorage::get_serialised_outbox_message()
+{
+    Message message = outbox.front();
+    outbox.pop_front();
+
+    std::string buf = message.recipient + message.sender + message.message;
+    return buf;
 }

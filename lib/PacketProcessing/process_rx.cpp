@@ -1,7 +1,6 @@
 #include <process_rx.h>
 
 RH_RF24 drf4463(DRF4463_nSEL, DRF4463_nIRQ, DRF4463_SDN);
-RHReliableDatagram manager(drf4463, CLIENT_ADDRESS);
 
 bool setupRadio() {
     return drf4463.init();
@@ -28,22 +27,16 @@ void main_processor(CFXSerial &cfxSerial) {
     unsigned long timer_memoryusage = millis();
     unsigned long timer_sendrfmessage = millis();
 
+    // Set up receive buffer
+    uint8_t buf[RH_RF24_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(buf);
+
     bool succeeded = true;
 
-    // Force message into queue
-    generate_message_list(cfxSerial);
-
-    // Set up manager
-    if (!manager.init())
-    {
-      Serial.println("init failed!");
-    }
-
+    Serial.println("Configure modem");
+    drf4463.setModemConfig(RH_RF24::ModemConfigChoice::FSK_Rb0_5Fd1);
     drf4463.setFrequency(433.920);
     drf4463.setTxPower(0x05);
-
-    // Dont put this on the stack:
-    uint8_t buf[RH_RF24_MAX_MESSAGE_LEN];
 
     while(1) {
       clearLED();
@@ -74,32 +67,80 @@ void main_processor(CFXSerial &cfxSerial) {
       if( !cfxSerial.message_storage.outbox_empty() )
       {
           Serial.println("Outbox is not empty!");
-          Message message = cfxSerial.message_storage.get_outbox_message();
+          std::string message = cfxSerial.message_storage.get_serialised_outbox_message();
           Serial.println("Contents:");
-          Serial.println(message.message.c_str());
+          Serial.println(message.c_str());
           setLEDState(RED);
-          manager.sendtoWait((uint8_t *)message.message.c_str(), message.message.length(), SERVER_ADDRESS);
-          setLEDState(YELLOW);
 
-          // Now wait for a reply from the server
-          uint8_t len = sizeof(buf);
-          uint8_t from;   
-          if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
-          {
-            setLEDState(GREEN);
-            Serial.print("got reply from : 0x");
-            Serial.print(from, HEX);
-            Serial.print(": ");
-            Serial.println((char*)buf);
-            Serial.print("Rx power: ");
-            Serial.print((uint8_t)drf4463.lastRssi());
-            Serial.println("dBm");
+          drf4463.send((uint8_t *)message.c_str(), strlen(message.c_str()));
+
+          setLEDState(GREEN);
+      }
+
+      // Check to see if there's a message to be received
+      if (drf4463.available())
+      {
+        delay(1000);
+        // See if there's a message in the buffer
+        if (drf4463.recv(buf, &len))
+        {
+          Serial.println("Message received!");
+          Serial.print("Length: ");
+          Serial.println(len);
+          Serial.print("Message: ");
+          Serial.println((char *)buf);
+
+          Message received_message;
+          received_message.date = 14012023;
+          received_message.time = 143200;
+
+          // Iterate through the whole buffer
+          // Recipient field is 8 characters
+
+          uint8_t i=0;
+          uint8_t j=0;
+
+          char recipient[9];
+          char sender[9];
+          char message[113];
+
+          while (i < 8) {
+            recipient[j] = buf[i];
+            i++;
+            j++;
           }
-          else
-          {
-            setLEDState(RED);
-            Serial.println("No reply, is rf24_reliable_datagram_server running?");
+
+          recipient[j] = '\0';
+          j=0;
+
+          while (i < 16) {
+            sender[j] = buf[i];
+            i++;
+            j++;
           }
+
+          sender[j] = '\0';
+          j=0;
+
+          while (i < 128) {
+            message[j] = buf[i];
+            i++;
+            j++;
+          }
+
+          message[j] = '\0';
+          j=0;
+
+          received_message.recipient = std::string(recipient);
+          received_message.sender = std::string(sender);
+          received_message.message = std::string(message);
+
+          cfxSerial.message_storage.send_message_to_inbox(received_message);
+        }
+        else
+        {
+          Serial.println("Recv failed?");
+        }
       }
     }
 }
@@ -181,7 +222,7 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 222755;
     message.message = "Hello world! This is a test message.";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_inbox(message);
+    cfxSerial.message_storage.send_message_to_outbox(message);
 
     message.recipient = "MNBRIDLE";
     message.sender = "EMAIL";
@@ -189,7 +230,7 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 002630;
     message.message = "Midnight messages are spoooooky, w000000000";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_inbox(message);
+    cfxSerial.message_storage.send_message_to_outbox(message);
 
     message.recipient = "MNBRIDLE";
     message.sender = "MNBRIDLE";
@@ -197,7 +238,7 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.time = 002730;
     message.message = "It's rather cold and quiet at the moment.";
     message.length = 19 + message.message.length();
-    cfxSerial.message_storage.send_message_to_inbox(message);
+    cfxSerial.message_storage.send_message_to_outbox(message);
 
     message.recipient = "MNBRIDLE";
     message.sender = "EMAIL";
@@ -206,5 +247,5 @@ void generate_message_list(CFXSerial &cfxSerial)
     message.message = "I'm tired & I want to go to bed.";
     message.length = 19 + message.message.length();
     
-    cfxSerial.message_storage.send_message_to_inbox(message);
+    cfxSerial.message_storage.send_message_to_outbox(message);
 }

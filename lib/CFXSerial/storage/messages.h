@@ -3,6 +3,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <string>
 #include "matrices.h"
 #include <codecs/datagrams/datagrams.hpp>
 
@@ -39,6 +40,8 @@ class MessageStorage
         DatagramType message_type(MatrixData message);
 
         Message get_outbox_message();
+        std::string get_serialised_outbox_message();
+
         bool outbox_empty();
 
     private:
