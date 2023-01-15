@@ -455,9 +455,27 @@ bool CFXSerial::state_SEND_VARIABLE_DESCRIPTION_PACKET()
   {
     Serial.print("We want a matrix: ");
     Serial.println(data_request.variableName);
-    // Serial.println(matrix_memory.is_valid(data_request.variableName));
-    // Serial.println(matrix_memory.get_all(data_request.variableName).rows);
-    // Serial.println(matrix_memory.get_all(data_request.variableName).cols);
+
+    // If we are requesting matrix B, get the latest message from the inbox queue
+    if(data_request.variableName == 'B')
+    {
+      MatrixData message_to_send_to_cfx;
+
+      Serial.println("Get latest message from inbox if possible");
+      if (!message_storage.inbox_empty())
+      {
+        Serial.println("Trying to process message from inbox");
+        message_to_send_to_cfx = message_storage.process_received_message();
+      
+        // Ensure that matrix is set to valid
+        message_to_send_to_cfx.isValid = true;
+
+        matrix_memory.init('B', message_to_send_to_cfx.rows, message_to_send_to_cfx.cols, message_to_send_to_cfx.isComplex);
+        matrix_memory.append_matrix('B', message_to_send_to_cfx);
+      } else {
+        Serial.println("No messages waiting; continue");
+      }
+    }
 
     if (!matrix_memory.is_valid(data_request.variableName))
     {

@@ -77,12 +77,6 @@ void main_processor(CFXSerial &cfxSerial) {
           setLEDState(GREEN);
       }
 
-      if ( !cfxSerial.message_storage.inbox_empty() )
-      {
-        Serial.println("Message ready to be received by the calculator");
-        process_datagram(cfxSerial);
-      }
-
       // Check to see if there's a message to be received
       if (drf4463.available())
       {

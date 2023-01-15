@@ -329,14 +329,6 @@ MatrixData MessageStorage::process_received_message()
     received_message.isComplex = false;
     received_message.receivedFromCFX = false;
 
-    Serial.println("Total length of saved message: ");
-    Serial.println(offset + message.message.length());
-
-    Serial.print("Cols: ");
-    Serial.println(received_message.cols);
-    Serial.print("Rows: ");
-    Serial.println(received_message.rows);
-
     return received_message;
 }
 
@@ -363,10 +355,6 @@ ComplexValue MessageStorage::convert_ascii_to_scancode(char ascii, uint8_t row, 
     scancode.real_part = (double)map[ascii];
     scancode.row = row;
     scancode.col = col;
-
-    Serial.println(scancode.real_part);
-    Serial.println(scancode.row);
-    Serial.println(scancode.col);
 
     return scancode;
 }
