@@ -38,4 +38,5 @@ void checkForDebugModeRequest(CFXSerial &cfxSerial);
 void changeLEDColour(CFXSerial &cfxSerial);
 void getRadioModuleStatus(CFXSerial &cfxSerial);
 bool process_datagram(CFXSerial &cfxSerial);
+bool process_settings_message(CFXSerial &cfxSerial);
 void generate_message_list(CFXSerial &cfxSerial);

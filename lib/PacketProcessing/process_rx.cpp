@@ -26,6 +26,9 @@ void main_processor(CFXSerial &cfxSerial) {
     unsigned long timer_executecurrentstate = millis();
     unsigned long timer_memoryusage = millis();
     unsigned long timer_sendrfmessage = millis();
+    unsigned long timer_getstatus = millis();
+
+    unsigned long status_sample_interval = 30000;
 
     // Set up receive buffer
     uint8_t buf[RH_RF24_MAX_MESSAGE_LEN];
@@ -35,15 +38,22 @@ void main_processor(CFXSerial &cfxSerial) {
 
     Serial.println("Configure modem");
     drf4463.setModemConfig(RH_RF24::ModemConfigChoice::FSK_Rb0_5Fd1);
-    drf4463.setFrequency(433.920);
+    drf4463.setFrequency(432.100);
     drf4463.setTxPower(0x05);
 
+    clearLED();
+
     while(1) {
-      clearLED();
+
+      if (millis() > timer_getstatus + status_sample_interval)
+      {
+        getRadioModuleStatus(cfxSerial);
+        timer_getstatus = millis();
+      }
+
       if (succeeded || timer_executecurrentstate + 100 < millis())
       {
         succeeded = cfxSerial.execute_current_state();
-        getRadioModuleStatus(cfxSerial);
         changeLEDColour(cfxSerial);
         checkForDebugModeRequest(cfxSerial);
         timer_executecurrentstate = millis();
@@ -61,7 +71,27 @@ void main_processor(CFXSerial &cfxSerial) {
       {
         Serial.println("Datagram received");
         process_datagram(cfxSerial);
-      } 
+      }
+
+      // See if CFX has sent a settings message
+      if (cfxSerial.matrix_memory.is_valid('S') && cfxSerial.matrix_memory.wasReceivedFromCFX('S'))
+      {
+        Serial.println("Settings message received");
+        process_settings_message(cfxSerial);
+      }
+
+      // See if status sample interval has been updated
+      if (cfxSerial.variable_memory.is_initialised('S'))
+      {
+          VariableData variable_data;
+
+          // Now do something exciting - change the sample period
+          variable_data = cfxSerial.variable_memory.get('S');
+          status_sample_interval = (unsigned long)variable_data.data.real_part;
+          Serial.print("Changing status sample interval to ");
+          Serial.println(status_sample_interval);
+          cfxSerial.variable_memory.clear('S');
+      }
 
       // See if there are any messages to send in Outbox
       if( !cfxSerial.message_storage.outbox_empty() )
@@ -152,12 +182,41 @@ void main_processor(CFXSerial &cfxSerial) {
 void getRadioModuleStatus(CFXSerial &cfxSerial)
 {
     SystemStatus status;
+    MatrixData status_data;
+    ComplexValue message_data;
 
     // Get temperature of radio module
     status = getRadioStatus();
-    cfxSerial.variable_memory.set('T', status.radio_temperature);
-    cfxSerial.variable_memory.set('V', status.batteryVoltage);
-    cfxSerial.variable_memory.set('U', status.uptime);
+
+    status_data.cols = 4;
+    status_data.rows = 1;
+
+    message_data.real_part = status.uptime.real_part;
+    message_data.row = 1;
+    message_data.col = 1;
+    status_data.matrix_data.push_back(message_data);
+
+    message_data.real_part = status.radio_temperature.real_part;
+    message_data.row = 1;
+    message_data.col = 2;
+    status_data.matrix_data.push_back(message_data);
+
+    message_data.real_part = status.batteryVoltage.real_part;
+    message_data.row = 1;
+    message_data.col = 3;
+    status_data.matrix_data.push_back(message_data);
+
+    message_data.real_part = status.lastRssi.real_part;
+    message_data.row = 1;
+    message_data.col = 4;
+    status_data.matrix_data.push_back(message_data);
+   
+    status_data.isValid = true;
+    status_data.isComplex = false;
+    status_data.receivedFromCFX = false;
+
+    cfxSerial.matrix_memory.init('T', status_data.rows, status_data.cols, status_data.isComplex);
+    cfxSerial.matrix_memory.append_matrix('T', status_data);
 }
 
 void changeLEDColour(CFXSerial &cfxSerial)
@@ -187,6 +246,33 @@ void checkForDebugModeRequest(CFXSerial &cfxSerial)
         setLEDState(GREEN);
         cfxSerial.variable_memory.clear('D');
     }
+}
+
+bool process_settings_message(CFXSerial &cfxSerial)
+{
+  MatrixData settings_message = cfxSerial.matrix_memory.get_all('S');
+  double frequency;
+  uint8_t power;
+
+  /* Schema:
+     - Frequency [1,1]
+     - Power [1,2]
+     - Data rate [1,3]
+  */
+  if (!(settings_message.cols == 3 && settings_message.rows == 1))
+  {
+    return false;
+  }
+
+  frequency = settings_message.matrix_data[0].real_part;
+  power = settings_message.matrix_data[1].real_part;
+
+  drf4463.setFrequency(frequency);
+  Serial.print("Frequency set to ");
+  Serial.print(frequency);
+  Serial.println("MHz");
+
+  return true;
 }
 
 bool process_datagram(CFXSerial &cfxSerial)
