@@ -265,8 +265,11 @@ MatrixData MessageStorage::process_received_message()
     uint8_t offset = 0;
 
     // Now we have the message, turn it into scancodes
-    received_message.cols = (uint8_t)message.length;
+    received_message.cols = (uint8_t)message.length - 2;
     received_message.rows = 1;
+
+    Serial.print("Length: ");
+    Serial.println(received_message.cols);
 
     ComplexValue message_type;
     message_type.real_part = 2;
@@ -316,13 +319,24 @@ MatrixData MessageStorage::process_received_message()
     time.col = 19;
     time.row = 1;
 
+    Serial.println(date.real_part);
+    Serial.println(time.real_part);
+
     received_message.matrix_data.push_back(date);
     received_message.matrix_data.push_back(time);
 
     offset = 20;
     for (uint8_t i=0; i<message.message.length(); i++)
     {
-        received_message.matrix_data.push_back(convert_ascii_to_scancode(message.message.at(i), 1, i+offset));
+        Serial.print("Offset: ");
+        Serial.println(offset + i);
+        Serial.print("ascii: ");
+        Serial.println(message.message.at(i));
+        scancode = convert_ascii_to_scancode(message.message.at(i), 1, i+offset);
+        received_message.matrix_data.push_back(scancode);
+
+        Serial.print("Scancode: ");
+        Serial.println(scancode.real_part);
     }
 
     received_message.isValid = true;

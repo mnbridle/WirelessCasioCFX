@@ -23,6 +23,8 @@ SystemStatus getRadioStatus() {
 
 void main_processor(CFXSerial &cfxSerial) {
     // rename to something more meaningful, prototype code!
+
+    // Set up timers
     unsigned long timer_executecurrentstate = millis();
     unsigned long timer_memoryusage = millis();
     unsigned long timer_sendrfmessage = millis();
@@ -40,6 +42,7 @@ void main_processor(CFXSerial &cfxSerial) {
     drf4463.setModemConfig(RH_RF24::ModemConfigChoice::FSK_Rb0_5Fd1);
     drf4463.setFrequency(432.100);
     drf4463.setTxPower(0x05);
+    setModeRx();
 
     clearLED();
 
@@ -110,9 +113,9 @@ void main_processor(CFXSerial &cfxSerial) {
       // Check to see if there's a message to be received
       if (drf4463.available())
       {
-        delay(2000);
+        Serial.println("Message available!");
         // See if there's a message in the buffer
-        if (drf4463.recv(buf, &len))
+        while (drf4463.recv(buf, &len))
         {
           Serial.println("Message received!");
           Serial.print("Length: ");
@@ -120,61 +123,91 @@ void main_processor(CFXSerial &cfxSerial) {
           Serial.print("Message: ");
           Serial.println((char *)buf);
 
-          Message received_message;
-          received_message.date = 14012023;
-          received_message.time = 143200;
-
-          // Iterate through the whole buffer
-          // Recipient field is 8 characters
-
-          uint8_t i=0;
-          uint8_t j=0;
-
-          char recipient[9];
-          char sender[9];
-          char message[113];
-
-          while (i < 8) {
-            recipient[j] = buf[i];
-            i++;
-            j++;
-          }
-
-          recipient[j] = '\0';
-          j=0;
-
-          while (i < 16) {
-            sender[j] = buf[i];
-            i++;
-            j++;
-          }
-
-          sender[j] = '\0';
-          j=0;
-
-          while (i < 128 && buf[i] != '\0') {
-            message[j] = buf[i];
-            i++;
-            j++;
-          }
-
-          message[j] = '\0';
-          j=0;
-
-          received_message.recipient = std::string(recipient);
-          received_message.sender = std::string(sender);
-          received_message.message = std::string(message);
-          received_message.length = 19 + received_message.message.length();
-
-          cfxSerial.message_storage.send_message_to_inbox(received_message);
-
-          // Clear memory
-          memset(buf, 0, RH_RF24_MAX_MESSAGE_LEN);
+          delay(250);
         }
-        else
-        {
-          Serial.println("Recv failed?");
+
+        Message received_message;
+        received_message.date = 14012023;
+        received_message.time = 143200;
+
+        /* RF message schema:
+        recipient = char[8];
+        sender = char[8];
+        date = char[8];
+        time = char[6];
+        message = char[112]
+        */
+
+        // Iterate through the whole buffer
+        // Recipient field is 8 characters
+
+        uint8_t i=0;
+        uint8_t j=0;
+
+        char recipient[9];
+        char sender[9];
+        char date[9];
+        char time[7];
+        char message[113];
+
+        uint8_t offset = 0;
+        i = 0;
+        while (i < 8) {
+          recipient[i] = buf[i + offset];
+          i++;
         }
+        recipient[i] = '\0';
+
+        offset += i;
+        i=0;
+        while (i < 8) {
+          sender[i] = buf[i + offset];
+          i++;
+        }
+        sender[i] = '\0';
+
+        offset += i;
+        i=0;
+        while (i < 8) {
+          date[i] = buf[i + offset];
+          i++;
+        }
+        sender[i] = '\0';
+
+        offset += i;
+        i=0;
+        while (i < 6) {
+          time[i] = buf[i + offset];
+          i++;
+        }
+        sender[i] = '\0';
+
+        offset += i;
+        i=0;
+        while (i < 112 && buf[i + offset] != '\0') {
+          message[i] = buf[i + offset];
+          i++;
+        }
+        message[i] = '\0';
+
+        received_message.recipient = std::string(recipient);
+        received_message.sender = std::string(sender);
+        received_message.message = std::string(message);
+        received_message.date = atoi(date);
+        received_message.time = atoi(time);
+        received_message.length = 21 + received_message.message.length();
+
+        cfxSerial.message_storage.send_message_to_inbox(received_message);
+
+        Serial.print("Final message: ");
+        Serial.println(received_message.recipient.c_str());
+        Serial.println(received_message.sender.c_str());
+        Serial.println(received_message.date);
+        Serial.println(received_message.time);
+        Serial.println(received_message.message.c_str());
+
+        // Clear memory
+        memset(buf, 0, RH_RF24_MAX_MESSAGE_LEN);
       }
     }
 }
@@ -251,6 +284,7 @@ void checkForDebugModeRequest(CFXSerial &cfxSerial)
 bool process_settings_message(CFXSerial &cfxSerial)
 {
   MatrixData settings_message = cfxSerial.matrix_memory.get_all('S');
+
   double frequency;
   uint8_t power;
 
@@ -258,8 +292,9 @@ bool process_settings_message(CFXSerial &cfxSerial)
      - Frequency [1,1]
      - Power [1,2]
      - Data rate [1,3]
+     - Callsign [1,4] - [1,11]
   */
-  if (!(settings_message.cols == 3 && settings_message.rows == 1))
+  if (!(settings_message.cols == 11 && settings_message.rows == 1))
   {
     return false;
   }

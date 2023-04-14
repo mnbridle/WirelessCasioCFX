@@ -1,10 +1,6 @@
-// Imports for radio
-#include <CFXSerial.hpp>
-#include <LEDHelpers.hpp>
-#include <process_rx.h>
 #include "main.h"
 
-CFXSerial cfxSerial;
+// CFXSerial cfxSerial;
 
 void setup() {
   // Set up DotStar LED
@@ -14,19 +10,19 @@ void setup() {
   
   // Set up serial port
   Serial.begin(9600, SERIAL_8N2);
-  setUpSerialPort();
+  // setUpSerialPort();
 
-  cfxSerial.init();
+  // cfxSerial.init();
   
-  // Serial.println("Setting up radio");
-  // Set up radio
-  if(setupRadio()) {
-    setLEDState(YELLOW);
-    setModeRx();
-  } else {
-    setLEDState(RED);
-    Serial.println("Error initialising DRF4463 radio. Rebooting...");
-  }
+  // // Serial.println("Setting up radio");
+  // // Set up radio
+  // if(setupRadio()) {
+  //   setLEDState(YELLOW);
+  //   setModeRx();
+  // } else {
+  //   setLEDState(RED);
+  //   Serial.println("Error initialising DRF4463 radio. Rebooting...");
+  // }
   // Serial.println("Setup complete!");
   setLEDState(GREEN);
 }
@@ -35,6 +31,9 @@ void loop() {
   clearLED();
   setLEDState(GREEN);
 
-  main_processor(cfxSerial);
+  CasioMessageProcessor app = CasioMessageProcessor();
+  app.run();
+
+  // main_processor(cfxSerial);
 }
 

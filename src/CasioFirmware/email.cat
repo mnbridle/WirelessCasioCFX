@@ -2,7 +2,7 @@
 Format:TXT
 Communication SW:0
 Data Type:PG
-Capacity:256
+Capacity:358
 File Name:EMAIL
 Group Name:
 Password:
@@ -15,18 +15,21 @@ Option4:
 128\->\theta
 \Lbl 1:\ClrText
 \Locate 1,1,"\aster\aster\aster CasioMail 1.0 \aster\aster\aster"
-\Locate 2,3,"1 - R\Read mail"
-\Locate 2,4,"2 - Write mail"
-\Locate 2,5,"3 - Settings..."
-\Locate 2,6,"4 - About..."
-\Locate 2,7,"Exit"
+\Locate 1,2,"\aster-------------------\aster"
+\Locate 1,3,"\aster \f1-Send : \f4-Scan \aster"
+\Locate 1,4,"\aster \f2-R\Recv : \f5-Cfg  \aster"
+\Locate 1,5,"\aster \f3-\List : \f6-Info \aster"
+\Locate 1,6,"\aster    Exit :         \aster"
+\Locate 1,7,"\aster-------------------\aster"
 \Lbl 0:\Getkey\->A
 A=0\=>\Goto0
 A=47\=>\GotoZ
-A=72\=>\Prog ".MSGREAD"
-A=62\=>\Prog ".MSGWRTE"
-A=52\=>\Prog ".EMLSETT"
-A=73\=>\Prog ".EMLABT"
+A=79\=>\Prog ".MSGWRTE"
+A=69\=>\Prog ".MSGREAD"
+A=59\=>\Prog ".MSGLIST"
+A=49\=>\Prog ".STNLIST"
+A=39\=>\Prog ".EMLSETT"
+A=29\=>\Prog ".EMLABT"
 \Goto1
 \Lbl Z:\ClrText
 %End
@@ -45,7 +48,7 @@ Option4:
 %Data Record
 \ClrText
 \Locate 1,1,"\aster\aster\asterAbout CasioMail\aster\aster\aster"
-\Locate 1,2,"CasioMail V1.0.230211"
+\Locate 1,2,"CasioMail V1.0.230403"
 \Locate 2,3,"(C)2023 M N Bridle"
 \Locate 2,4,"mnbridle@gmail.com"
 \Locate 2,5,"GNU-GPL v3.0"
@@ -92,7 +95,7 @@ Option4:
 Format:TXT
 Communication SW:0
 Data Type:PG
-Capacity:153
+Capacity:152
 File Name:.EMLRECV
 Group Name:
 Password:
@@ -103,15 +106,15 @@ Option4:
 %Data Record
 0\->I
 \ClrText
-{1,1}\->\Dim \Mat B
-2\->\Mat B[1,1]
-\Send(\Mat B)
+'{1,1}\->\Dim \Mat A
+'\Send(\Mat A)
 \Locate 1,1,"R\Receiving..."
 \Receive(\Mat B)
 \Mat B[1,1]\<>2\=>\Goto0
 \Locate 14,1,"\Done!"
 \For 0\->A \To 100
 \Next 
+\Mat B\->\Mat A
 \Return
 \Lbl 0:\Locate 1,2,"Msg ERROR"
 \For 0\->A \To 100
@@ -734,36 +737,6 @@ Option4:
 Format:TXT
 Communication SW:0
 Data Type:PG
-Capacity:161
-File Name:.TXTFWRI
-Group Name:
-Password:
-Option1:NL
-Option2:
-Option3:
-Option4:
-%Data Record
-'WRITE TXTFLD
-'M,N POSOFF
-'Z ARRAYOFF
-'L FLDLEN
-\For 1\->A \To L
-\Lbl 0:\Getkey\->C
-C=0\=>\Goto0
-C=31\=>\Break
-C=44\=>A\>=2\=>\Dsz A
-C=44\=>\Locate M+A-1,Y," "
-C=44\=>\Goto0
-M+A-1\->X
-N\->Y
-\Prog ".CHRUCAL"
-C\->\Mat A[1,A+Z]
-\Next 
-%End
-%Header Record
-Format:TXT
-Communication SW:0
-Data Type:PG
 Capacity:105
 File Name:.TXTFSHW
 Group Name:
@@ -778,7 +751,7 @@ Option4:
 'Z ARRAYOFF
 'L FLDLEN
 \For 1\->A \To L
-\Mat B[1,A+Z]\->C
+\Mat A[1,A+Z]\->C
 C=0\=>\Break
 M+A-1\->X
 N\->Y
@@ -800,12 +773,12 @@ Option4:
 %Data Record
 'SHOW TIME
 'M,N OFFSET Z
-\Int (\Mat B[1,Z]/10000)\->D
+\Int (\Mat A[1,Z]/10000)\->D
 D\<=9\=>\Prog ".TXTFTM0"
 D\>=10\=>\Prog ".TXTFTM1"
 M+2\->M
 \Locate M,N,":"
-\Int (\Int (\Frac (\Mat B[1,Z]/10000)*10000)/100)\->D
+\Int (\Int (\Frac (\Mat A[1,Z]/10000)*10000)/100)\->D
 M+1\->M
 D\<=9\=>\Prog ".TXTFTM0"
 D\>=10\=>\Prog ".TXTFTM1"
@@ -845,7 +818,199 @@ Option4:
 Format:TXT
 Communication SW:0
 Data Type:PG
-Capacity:66
+Capacity:161
+File Name:.NUMFWRI
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'WRITE TXTFLD
+'M,N POSOFF
+'Z ARRAYOFF
+'L FLDLEN
+\For 1\->A \To L
+\Lbl 0:\Getkey\->C
+C=0\=>\Goto0
+C=31\=>\Break
+C=44\=>A\>=2\=>\Dsz A
+C=44\=>\Locate M+A-1,Y," "
+C=44\=>\Goto0
+M+A-1\->X
+N\->Y
+\Prog ".CHRUCAL"
+C\->\Mat A[1,A+Z]
+\Next 
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:342
+File Name:.TXTFWRI
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'WRITE MANY CHARACTER TYPES TO FIELD
+'M,N POSOFF
+'Z ARRAYOFF
+'L FLDLEN
+0\->S
+0\->W
+\Lbl 1:\While W<L
+\Lbl 0:\Getkey\->C
+C=0\=>\Goto0
+C=31\=>\Return
+C=47\=>\Return
+C=44\=>\Prog ".MSGDCHR"
+C=44\=>\Goto0
+C=78\=>\Prog ".CHRSSTE"
+C=77\=>\Prog ".CHRASTE"
+C=77\ Or C=78\=>\Goto0
+M\->X
+N\->Y
+S=0\=>\Prog ".CHRUCAL"
+S=1\=>\Prog ".CHRLCAL"
+S=2\=>\Prog ".CHRNUMS"
+S\>=3\=>\Prog ".CHRSPEC"
+I=1\=>C\<>61\=>C\<>31\=>\Goto0
+\Prog ".CHRC2RW"
+R\->\Mat A[1,W+Z]
+\Isz W
+\Prog ".CHRNPOS"
+I=1\=>\Prog ".MSGWINI"
+\WhileEnd
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:295
+File Name:.FRQFWRI
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'WRITE FRQFLD
+'M,N POSOFF
+'Z ARRAYOFF
+'L FLDLEN=6,FFF.FFF
+'OUTPUT F
+{1,7}\->\Dim \Mat Z
+\For 1\->A \To 7
+\Lbl 0:\Getkey\->C
+C=0\=>\Goto0
+C=31\=>\Break
+C=44\=>A\>=2\=>\Dsz A
+C=44\=>\Locate M+A-1,Y," "
+C=44\=>\Goto0
+C\<>74\=>C\<>64\=>C\<>54\=>C\<>73\=>C\<>63\=>C\<>53\=>C\<>72\=>C\<>62\=>C\<>52\=>C\<>71\=>C\<>61\=>C\<>41\=>\Goto0
+M+A-1\->X
+N\->Y
+\Prog ".CHRNUMS"
+C\->\Mat Z[1,A]
+\Next 
+'CONVERT TO FLOAT
+\Prog ".SCN2NUM"
+F\->\Mat A[1,Z]
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:363
+File Name:.SCN2NUM
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'INPUT \Mat Z
+'OUTPUT F
+'CONVERT TO FLOAT
+0\->F
+0\->G
+0\->H
+0\->S
+\Lbl 1
+\For 7\->A \To 1 \Step \(-)1
+\Mat Z[1,A]\->C
+C=74\=>7\->G
+C=64\=>8\->G
+C=54\=>9\->G
+C=73\=>4\->G
+C=63\=>5\->G
+C=53\=>6\->G
+C=72\=>1\->G
+C=62\=>2\->G
+C=52\=>3\->G
+C=71\=>0\->G
+C=61\=>\Isz H
+C=41\=>\Dsz S
+H>1\ Or S<\(-)1\=>\(-)99999999\->F
+H>1\ Or S<\(-)1\=>\Return
+C\<>61\=>C\<>41\=>F+(G*10^(7-A-H+S))\->F
+\Next 
+'FIND .
+\For 1\->A \To 7
+\Mat Z[1,A]\->C
+C=61\=>\Break
+\Next 
+C=61\=>S=0\=>F/(10^(A-1))\->F
+C=61\=>S=\(-)1\=>\(-)F/(10^(7-A))\->F
+C\<>61\=>S=\(-)1\=>\(-)F\->F
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:214
+File Name:.ENUMSEL
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'ENUM SELECTOR
+'VALUES IN \Mat Y
+'M,N POSOFF
+'O VALSIZE
+'Z ARRAYOFF
+1\->S
+\Dim \Mat Y
+\List \Ans[1]\->T
+\Lbl 0:\Getkey\->A
+A=0\=>\Goto0
+A\<>27\=>A\<>38\=>A\<>31\=>\Goto0
+A=38\=>\Dsz S
+A=27\=>\Isz S
+A=31\=>\Goto1
+S>T\=>1\->S
+S<1\=>T\->S
+\Mat Y[S,1]\->V
+\Locate M,N,"   "
+\Locate M,N,\Mat Y[S,1]
+\Goto0
+\Lbl 1:V\->\Mat A[1,Z]
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:932
 File Name:.EMLSETT
 Group Name:
 Password:
@@ -854,9 +1019,142 @@ Option2:
 Option3:
 Option4:
 %Data Record
+{1,10}\->\Dim \Mat A
+'ENUM VALUES FOR PWR
+{\(-)10,0,5,10,13}\->\List 1
+\List->Mat(\List 1)
+\Mat \Ans\->\Mat Y
 \ClrText
-\Locate 1,1,"\aster\aster\aster\aster\aster\aster SETTINGS \aster\aster\aster\aster\aster"
-\Locate 1,3,"F\Cor\ReQ: "
-\Locate 1,4,"PWR: "
-
+\Locate 1,1,"\aster===== Settings ====\aster"
+\Locate 1,2,"\aster( ) ID: [        ] \aster"
+\Locate 1,3,"\aster( ) Frequency:     \aster"
+\Locate 1,4,"\aster    [   .   ] MHz  \aster"
+\Locate 1,5,"\aster( ) Pw\Cor: <   > \RdB\milli \aster"
+\Locate 1,6,"\aster                   \aster"
+1\->C
+\Lbl 0:\Locate 1,7,"\aster=<\Rb\Ra\Rck========s\Rel>=\aster"
+C=1\=>2\->D
+C=2\=>3\->D
+C=3\=>5\->D
+\Locate 3,D,"\->"
+\Lbl 1:\Getkey\->A
+A=0\=>\Goto1
+A=37\=>\Goto8
+A=28\=>\Goto9
+A=31\=>\GotoA
+A=27\=>\GotoA
+'DOWNLOAD MODE
+A=46\=>\GotoX
+A=38\=>\Return
+A=47\=>\Return
+\Goto0
+\Lbl 8:\Locate 3,D," "
+C+1\->C
+C>3\=>1\->C
+\Goto0
+\Lbl 9:\Locate 3,D," "
+C-1\->C
+C<1\=>3\->C
+\Goto0
+\Lbl A:\Locate 1,7,"\aster===================\aster"
+\Locate 3,D,"\=>"
+'CALLSIGN ENTRY
+C\->\r
+C=1\=>\GotoM
+'FREQ
+C=2\=>\GotoN
+'PWR LEVEL
+C=3\=>\GotoO
+\Goto0
+\Lbl M:11\->M
+2\->N
+8\->L
+1\->Z
+\Prog ".TXTFWRI"
+'VALIDATE?
+\GotoZ
+\Lbl N:7\->M
+4\->N
+9\->Z
+\Locate 7,4,"       "
+\Prog ".FRQFWRI"
+'VALIDATE
+F<433\ Or F>438\=>\Locate 7,4,"       "
+F<433\ Or F>438\=>\GotoY
+\GotoZ
+\Lbl O:12\->M
+5\->N
+10\->Z
+\Prog ".ENUMSEL"
+\GotoZ
+\Lbl Y:\Locate 13,7," \Rerr\or "
+\Locate 3,D,"*"
+\For 0\->A \To 100
+\Next 
+\r\->C
+\Goto0
+\Lbl Z:\Locate 13,7," s\Rav\Re\Rd "
+\For 0\->A \To 100
+\Next 
+\r\->C
+\Goto0
+\Lbl X:240\->D
+\Send(D)
+\ClrText
+\Locate 1,6,"Serial Tx enabled f\or"
+\Locate 1,7,"    seconds."
+\Locate 1,7,D
+\Stop
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:268
+File Name:.MSGLIST
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'MOCKUP OF LIST UI
+\ClrText
+\Locate 1,1,"\aster===== Messages ====\aster"
+\Locate 1,2,"\aster\=>11 MNBRIDLE 03:04 \aster"
+\Locate 1,3,"\aster 12 BNBRIDLE 02:58 \aster"
+\Locate 1,4,"\aster 13 Email    01:23 \aster"
+\Locate 1,5,"\aster 14 NodeMail 00:50 \aster"
+\Locate 1,6,"\aster 15 Beacon   00:37 \aster"
+\Locate 1,7,"\aster= < 11-15 of 25 > =\aster"
+'PRESS KEY TO EXIT
+\Lbl 0:\Getkey\->A
+A=0\=>\Goto0
+%End
+%Header Record
+Format:TXT
+Communication SW:0
+Data Type:PG
+Capacity:280
+File Name:.STNLIST
+Group Name:
+Password:
+Option1:NL
+Option2:
+Option3:
+Option4:
+%Data Record
+'MOCKUP OF STATION LIST UI
+\ClrText
+\Locate 1,1,"\aster===== Stations ====\aster"
+\Locate 1,2,"\aster\=> Chch.CBD  \(-)84\RdB\milli \aster"
+\Locate 1,3,"\aster  Chch.CBD  \(-)89\RdB\milli \aster"
+\Locate 1,4,"\aster  Spreydon  \(-)95\RdB\milli \aster"
+\Locate 1,5,"\aster  H\ornby   \(-)105\RdB\milli \aster"
+\Locate 1,6,"\aster  Rollesto \(-)115\RdB\milli \aster"
+\Locate 1,7,"\aster= < 11-15 of 25 > =\aster"
+'PRESS KEY TO EXIT
+\Lbl 0:\Getkey\->A
+A=0\=>\Goto0
 %End
