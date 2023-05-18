@@ -50,8 +50,11 @@ bool CasioMessageProcessor::msg_cfx_to_arm()
         cfxSerial.message_storage.process_sent_message(raw_datagram);
         break;
     case DatagramType::SET_IDENTITY:
-        Serial.println("Settings message received");
+        Serial.println("set_identity message received");
         CasioMessageProcessor::settings_cfx_to_arm(raw_datagram);
+        break;
+    case DatagramType::GET_IDENTITY:
+        Serial.println("get_identity message received");
         break;
     default:
         Serial.println("Unknown message received");
@@ -82,20 +85,21 @@ bool CasioMessageProcessor::settings_cfx_to_arm(MatrixData settings_message)
     RadioSettings_t radio_settings;
 
     /* Schema:
-        - Callsign [1,1] - [1,8]
-        - Frequency [1,9]
-        - Power [1,10]
+        - MessageType [1,1]
+        - Callsign [1,2] - [1,9]
+        - Frequency [1,10]
+        - Power [1,11]
     */
     
     Serial.println(settings_message.cols);
     
-    if (!(settings_message.cols == 10 && settings_message.rows == 1))
+    if (!(settings_message.cols == 11 && settings_message.rows == 1))
     {
         return false;
     }
 
-    radio_settings.frequency = settings_message.matrix_data[8].real_part;
-    radio_settings.power = settings_message.matrix_data[9].real_part;
+    radio_settings.frequency = settings_message.matrix_data[9].real_part;
+    radio_settings.power = settings_message.matrix_data[10].real_part;
     // radio_settings.data_rate = settings_message.matrix_data[2].real_part;
     radio_settings.data_rate = 500;
 
