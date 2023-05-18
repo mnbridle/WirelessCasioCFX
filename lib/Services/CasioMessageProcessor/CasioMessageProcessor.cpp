@@ -37,10 +37,28 @@ void CasioMessageProcessor::timer_setup()
 
 bool CasioMessageProcessor::msg_cfx_to_arm()
 {
-  MatrixData raw_datagram = cfxSerial.matrix_memory.get_all('A');
-  cfxSerial.message_storage.process_sent_message(raw_datagram);
-  Serial.println("CFX to ARM - text message has been received");
-  return true;
+    MatrixData raw_datagram = cfxSerial.matrix_memory.get_all('A');
+
+    // cfxSerial.message_storage.process_sent_message(raw_datagram);
+    Serial.println("CFX to ARM - generic request has been received");
+    // Process raw datagram and decide what to do with it
+
+    DatagramType msg_type = static_cast<DatagramType>(raw_datagram.matrix_data[0].real_part);
+    switch (msg_type)
+    {
+    case DatagramType::TEXT_MESSAGE_TX:
+        cfxSerial.message_storage.process_sent_message(raw_datagram);
+        break;
+    case DatagramType::SET_IDENTITY:
+        Serial.println("Settings message received");
+        CasioMessageProcessor::settings_cfx_to_arm(raw_datagram);
+        break;
+    default:
+        Serial.println("Unknown message received");
+        break;
+    }
+
+    return true;
 }
 
 bool CasioMessageProcessor::msg_arm_to_cfx()
@@ -59,9 +77,8 @@ bool CasioMessageProcessor::msg_arm_to_cfx()
     return true;
 }
 
-bool CasioMessageProcessor::settings_cfx_to_arm()
+bool CasioMessageProcessor::settings_cfx_to_arm(MatrixData settings_message)
 {
-    MatrixData settings_message = cfxSerial.matrix_memory.get_all('S');
     RadioSettings_t radio_settings;
 
     /* Schema:
@@ -112,13 +129,6 @@ void CasioMessageProcessor::run()
         {
             Serial.println("CFX sent a text message to ARM");
             msg_cfx_to_arm();
-        }
-
-        // See if CFX has a settings message to send to the ARM
-        if (cfxSerial.matrix_memory.is_valid('S') && cfxSerial.matrix_memory.wasReceivedFromCFX('S'))
-        {
-            Serial.println("CFX sent a settings message to ARM");
-            settings_cfx_to_arm();
         }
 
         // Check message queue, to see if there's a message ready to send to the CFX
