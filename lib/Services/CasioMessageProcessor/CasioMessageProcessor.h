@@ -22,6 +22,8 @@ class CasioMessageProcessor {
         bool msg_cfx_to_arm();
         bool msg_arm_to_cfx();
 
+        void checkForDebugModeRequest();
+
         bool settings_cfx_to_arm(MatrixData);
 
         void generate_message_list();
@@ -31,6 +33,7 @@ class CasioMessageProcessor {
         unsigned long timer_memoryusage;
         unsigned long timer_sendrfmessage;
         unsigned long timer_getstatus;
+        unsigned long timer_debugmodecheck;
 
         // Set up CFX->ARM message queue
 

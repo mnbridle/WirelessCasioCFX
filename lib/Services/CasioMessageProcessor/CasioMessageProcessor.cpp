@@ -20,6 +20,8 @@ CasioMessageProcessor::CasioMessageProcessor()
     setUpSerialPort();
     cfxSerial.init();
 
+    // cfxSerial.debugMode = true;
+
     generate_message_list();
 }
 
@@ -33,15 +35,44 @@ void CasioMessageProcessor::timer_setup()
     timer_memoryusage = millis();
     timer_sendrfmessage = millis();
     timer_getstatus = millis();
+    timer_debugmodecheck = millis();
+}
+
+void CasioMessageProcessor::checkForDebugModeRequest() 
+{
+    // Should we go into debug mode?
+    VariableData variable_data;
+    unsigned long debug_mode_time = 0;
+
+    variable_data = cfxSerial.variable_memory.get('D');
+    debug_mode_time = variable_data.data.real_part;
+
+    if (debug_mode_time >= 1)
+    {
+        cfxSerial.cfx_software_interface(debug_mode_time);
+        cfxSerial.variable_memory.clear('D');
+    }
 }
 
 bool CasioMessageProcessor::msg_cfx_to_arm()
 {
+    // Get datagram and convert to buf
+    size_t len = 256;
+    uint16_t buf[len] = {0};
+    size_t data_size = cfxSerial.matrix_memory.size('A');
+    cfxSerial.matrix_memory.get_buf('A', buf, len);
+
     MatrixData raw_datagram = cfxSerial.matrix_memory.get_all('A');
 
     // cfxSerial.message_storage.process_sent_message(raw_datagram);
     Serial.println("CFX to ARM - generic request has been received");
-    // Process raw datagram and decide what to do with it
+
+    for(size_t i=0; i<data_size; i++)
+    {
+        Serial.print(i);
+        Serial.print(", ");
+        Serial.println(buf[i]);
+    }
 
     DatagramType msg_type = static_cast<DatagramType>(raw_datagram.matrix_data[0].real_part);
     switch (msg_type)
@@ -123,8 +154,6 @@ void CasioMessageProcessor::run()
         if (succeeded || timer_executecurrentstate + 100 < millis())
         {
             succeeded = cfxSerial.execute_current_state();
-            // changeLEDColour(cfxSerial);
-            // checkForDebugModeRequest(cfxSerial);
             timer_executecurrentstate = millis();
         }
 
@@ -141,7 +170,6 @@ void CasioMessageProcessor::run()
             Serial.println("ARM has a message to send to CFX");
             msg_arm_to_cfx();
         }
-
     }
 }
 
@@ -417,20 +445,3 @@ void CasioMessageProcessor::generate_message_list()
 //     setLEDState((long)led_colour);
 // }
 
-// void checkForDebugModeRequest(CFXSerial &cfxSerial) 
-// {
-//     // Should we go into debug mode?
-//     VariableData variable_data;
-//     unsigned long debug_mode_time = 0;
-
-//     variable_data = cfxSerial.variable_memory.get('D');
-//     debug_mode_time = variable_data.data.real_part;
-
-//     if (debug_mode_time >= 1)
-//     {
-//         setLEDState(RED);
-//         cfxSerial.cfx_software_interface(debug_mode_time);
-//         setLEDState(GREEN);
-//         cfxSerial.variable_memory.clear('D');
-//     }
-// }

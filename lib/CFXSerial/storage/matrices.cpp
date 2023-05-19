@@ -143,3 +143,32 @@ bool MatrixStorage::is_initialised(char variableName)
 {
     return (storage.find(variableName) != storage.end());
 }
+
+bool MatrixStorage::get_buf(char variableName, uint16_t* buf, size_t buf_len)
+{
+    // Iterate through the vector, cast data to uint16_t
+
+    if (!is_initialised(variableName))
+    {
+        return false;
+    }
+
+    // But first, check to ensure the buffer is big enough!
+    if(storage[variableName].matrix_data.size() > buf_len)
+    {
+        return false;
+    }
+
+    // Iterate through vector and write data to buffer
+    for (size_t i=0; i<size(variableName); i++)
+    {
+        buf[i] = static_cast<uint16_t>(storage[variableName].matrix_data[i].real_part);
+    }
+
+    // Clear the memory after it's been read back
+    // Serial.print("Clearing mat ");
+    // Serial.println(variableName);
+    clear(variableName);
+
+    return true;
+}

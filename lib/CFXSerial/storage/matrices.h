@@ -33,6 +33,9 @@ class MatrixStorage
         uint8_t cols(char variableName);
         size_t size(char variableName);
 
+        // Buffer-related methods
+        bool get_buf(char variableName, uint16_t* buffer, size_t len);
+
     private:
         bool is_initialised(char variableName);
         std::map<char, MatrixData> storage;
