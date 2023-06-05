@@ -162,7 +162,7 @@ bool MatrixStorage::get_buf(char variableName, uint16_t* buf, size_t buf_len)
     // Iterate through vector and write data to buffer
     for (size_t i=0; i<size(variableName); i++)
     {
-        buf[i] = static_cast<uint16_t>(storage[variableName].matrix_data[i].real_part);
+        buf[i] = static_cast<uint16_t>(storage[variableName].matrix_data[i].real_part + 0.5);
     }
 
     // Clear the memory after it's been read back

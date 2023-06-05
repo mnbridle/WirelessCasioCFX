@@ -8,6 +8,8 @@
 
 #include "codecs/datagrams/datagrams.hpp"
 
+#include <Mailbox/Mailbox.h>
+
 class CasioMessageProcessor {
     public:
         CasioMessageProcessor();
@@ -18,11 +20,10 @@ class CasioMessageProcessor {
         Radio radio;
         DeviceSettings device_settings;
         CFXSerial cfxSerial;
+        Mailbox mailbox;
 
         bool msg_cfx_to_arm();
         bool msg_arm_to_cfx();
-
-        void checkForDebugModeRequest();
 
         bool settings_cfx_to_arm(MatrixData);
 

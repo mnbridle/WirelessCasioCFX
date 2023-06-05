@@ -239,6 +239,8 @@ bool MessageStorage::process_sent_message(MatrixData sent_message)
         message.sender.push_back(convert_scancode_to_ascii(sent_message.matrix_data.at(i)));
     }
 
+    // Get date and time from ARM
+
     message.date = (unsigned int)sent_message.matrix_data.at(17).real_part;
     message.time = (unsigned int)sent_message.matrix_data.at(18).real_part;
 

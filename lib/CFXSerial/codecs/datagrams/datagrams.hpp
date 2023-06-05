@@ -11,8 +11,10 @@ enum class DatagramType : uint8_t
     MESSAGE_LIST = 0x04,
     MARK_MESSAGE_READ = 0x05,
     IS_MESSAGE_READ = 0x06,
+    SEND_TO_SERVER = 0xE0,
     SET_IDENTITY = 0xF0,
     GET_IDENTITY = 0xF1,
     SET_DATETIME = 0xF2,
     GET_DATETIME = 0xF3,
+    PROGRAM_TRANSFER = 0xFF,
 };

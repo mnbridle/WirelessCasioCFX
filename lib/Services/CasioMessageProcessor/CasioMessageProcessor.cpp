@@ -5,6 +5,7 @@ CasioMessageProcessor::CasioMessageProcessor()
     cfxSerial = CFXSerial();
     radio = Radio();
     device_settings = DeviceSettings();
+    mailbox = Mailbox();
 
     // Call timer_setup
     timer_setup();
@@ -38,22 +39,6 @@ void CasioMessageProcessor::timer_setup()
     timer_debugmodecheck = millis();
 }
 
-void CasioMessageProcessor::checkForDebugModeRequest() 
-{
-    // Should we go into debug mode?
-    VariableData variable_data;
-    unsigned long debug_mode_time = 0;
-
-    variable_data = cfxSerial.variable_memory.get('D');
-    debug_mode_time = variable_data.data.real_part;
-
-    if (debug_mode_time >= 1)
-    {
-        cfxSerial.cfx_software_interface(debug_mode_time);
-        cfxSerial.variable_memory.clear('D');
-    }
-}
-
 bool CasioMessageProcessor::msg_cfx_to_arm()
 {
     // Get datagram and convert to buf
@@ -63,8 +48,6 @@ bool CasioMessageProcessor::msg_cfx_to_arm()
     cfxSerial.matrix_memory.get_buf('A', buf, len);
 
     MatrixData raw_datagram = cfxSerial.matrix_memory.get_all('A');
-
-    // cfxSerial.message_storage.process_sent_message(raw_datagram);
     Serial.println("CFX to ARM - generic request has been received");
 
     for(size_t i=0; i<data_size; i++)
@@ -74,11 +57,12 @@ bool CasioMessageProcessor::msg_cfx_to_arm()
         Serial.println(buf[i]);
     }
 
-    DatagramType msg_type = static_cast<DatagramType>(raw_datagram.matrix_data[0].real_part);
+    DatagramType msg_type = static_cast<DatagramType>(buf[0]);
     switch (msg_type)
     {
     case DatagramType::TEXT_MESSAGE_TX:
-        cfxSerial.message_storage.process_sent_message(raw_datagram);
+        // cfxSerial.message_storage.process_sent_message(raw_datagram);
+        mailbox.sendMsgToOutbox(buf, data_size);
         break;
     case DatagramType::SET_IDENTITY:
         Serial.println("set_identity message received");
@@ -86,6 +70,13 @@ bool CasioMessageProcessor::msg_cfx_to_arm()
         break;
     case DatagramType::GET_IDENTITY:
         Serial.println("get_identity message received");
+        break;
+    case DatagramType::PROGRAM_TRANSFER:
+        Serial.println("Debug mode requested - going into transparent serial mode for 240 seconds");
+        cfxSerial.cfx_software_interface(240);
+        break;
+    case DatagramType::SEND_TO_SERVER:
+        Serial.println("Send messages to server");
         break;
     default:
         Serial.println("Unknown message received");

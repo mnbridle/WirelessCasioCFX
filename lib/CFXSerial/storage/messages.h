@@ -7,15 +7,17 @@
 #include "matrices.h"
 #include <codecs/datagrams/datagrams.hpp>
 
-struct Message
-{
-    unsigned int time;
-    unsigned int date;
-    uint8_t length;
-    std::string sender;
-    std::string recipient;
-    std::string message;
-};
+#include <Mailbox/Message.h>
+
+// struct Message
+// {
+//     unsigned int time;
+//     unsigned int date;
+//     uint8_t length;
+//     std::string sender;
+//     std::string recipient;
+//     std::string message;
+// };
 
 /*
 
